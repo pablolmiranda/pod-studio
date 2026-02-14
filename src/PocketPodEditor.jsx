@@ -15,7 +15,7 @@ const OPCODE_PATCH_DUMP = 0x01;
 // Universal Device Identity
 const IDENTITY_REQUEST = [0xf0, 0x7e, 0x7f, 0x06, 0x01, 0xf7];
 
-// Request current edit buffer
+// Request current edit buffer: opcode [0x00, 0x01]
 const REQUEST_EDIT_BUFFER = [
   SYSEX_START,
   ...LINE6_MANUFACTURER_ID,
@@ -25,127 +25,145 @@ const REQUEST_EDIT_BUFFER = [
   SYSEX_END,
 ];
 
-// Request specific preset (0-123)
-const buildPresetRequest = (presetNum) => [
+// Request all 124 presets: opcode [0x00, 0x02]
+const REQUEST_ALL_PRESETS = [
   SYSEX_START,
   ...LINE6_MANUFACTURER_ID,
   POCKET_POD_DEVICE_ID,
   OPCODE_PATCH_DUMP_REQUEST,
-  0x00, // stored preset
-  presetNum & 0x7f,
+  0x02, // dump all programs
   SYSEX_END,
 ];
 
 // MIDI CC definitions for Pocket POD parameters
 const MIDI_CC_MAP = {
+  // Preamp
   ampModel: { cc: 12, name: "Amp Model", min: 0, max: 31 },
-  cabModel: { cc: 71, name: "Cab Model", min: 0, max: 15 },
   drive: { cc: 13, name: "Drive", min: 0, max: 127 },
   bass: { cc: 14, name: "Bass", min: 0, max: 127 },
   mid: { cc: 15, name: "Mid", min: 0, max: 127 },
   treble: { cc: 16, name: "Treble", min: 0, max: 127 },
   chanVol: { cc: 17, name: "Chan Vol", min: 0, max: 127 },
-  reverb: { cc: 36, name: "Reverb", min: 0, max: 127 },
-  effect: { cc: 19, name: "Effect Type", min: 0, max: 15 },
+  drive2: { cc: 20, name: "Drive 2", min: 0, max: 127 },
   presence: { cc: 21, name: "Presence", min: 0, max: 127 },
-  noise_gate: { cc: 22, name: "Noise Gate Thresh", min: 0, max: 127 },
-  noise_gate_decay: { cc: 23, name: "Noise Gate Decay", min: 0, max: 127 },
-  delay_time: { cc: 30, name: "Delay Time", min: 0, max: 127 },
-  delay_time_fine: { cc: 31, name: "Delay Fine", min: 0, max: 127 },
-  delay_feedback: { cc: 32, name: "Delay Feedback", min: 0, max: 127 },
-  delay_level: { cc: 34, name: "Delay Level", min: 0, max: 127 },
-  reverb_decay: { cc: 37, name: "Reverb Decay", min: 0, max: 127 },
-  reverb_tone: { cc: 38, name: "Reverb Tone", min: 0, max: 127 },
-  reverb_diffusion: { cc: 39, name: "Reverb Diffusion", min: 0, max: 127 },
-  reverb_density: { cc: 40, name: "Reverb Density", min: 0, max: 127 },
-  reverb_type: { cc: 41, name: "Reverb Type", min: 0, max: 1 },
+  // Reverb
+  reverb_level: { cc: 18, name: "Reverb Level", min: 0, max: 127 },
+  reverb_type: { cc: 37, name: "Reverb Type", min: 0, max: 1 },
+  reverb_decay: { cc: 38, name: "Reverb Decay", min: 0, max: 127 },
+  reverb_tone: { cc: 39, name: "Reverb Tone", min: 0, max: 127 },
+  reverb_diffusion: { cc: 40, name: "Reverb Diffusion", min: 0, max: 127 },
+  reverb_density: { cc: 41, name: "Reverb Density", min: 0, max: 127 },
+  // FX config
+  effect: { cc: 19, name: "Effect Type", min: 0, max: 15 },
+  effect_tweak: { cc: 1, name: "Effect Tweak", min: 0, max: 127 },
   effect_speed: { cc: 51, name: "Effect Speed", min: 0, max: 127 },
   effect_depth: { cc: 52, name: "Effect Depth", min: 0, max: 127 },
   effect_feedback: { cc: 53, name: "Effect Feedback", min: 0, max: 127 },
   effect_predelay: { cc: 54, name: "Effect Pre-Delay", min: 0, max: 127 },
+  // Noise gate
+  noise_gate: { cc: 23, name: "Noise Gate Thresh", min: 0, max: 127 },
+  noise_gate_decay: { cc: 24, name: "Noise Gate Decay", min: 0, max: 127 },
+  // Delay
+  delay_time: { cc: 30, name: "Delay Time", min: 0, max: 127 },
+  delay_time_fine: { cc: 62, name: "Delay Fine", min: 0, max: 127 },
+  delay_feedback: { cc: 32, name: "Delay Feedback", min: 0, max: 127 },
+  delay_level: { cc: 34, name: "Delay Level", min: 0, max: 127 },
+  // Cabinet
+  cabModel: { cc: 71, name: "Cab Model", min: 0, max: 15 },
   air: { cc: 72, name: "Air", min: 0, max: 127 },
+  // Wah
   wah_position: { cc: 4, name: "Wah Position", min: 0, max: 127 },
   wah_bottom: { cc: 44, name: "Wah Bot Freq", min: 0, max: 127 },
   wah_top: { cc: 45, name: "Wah Top Freq", min: 0, max: 127 },
+  // Volume pedal
+  vol_level: { cc: 7, name: "Volume Level", min: 0, max: 127 },
+  vol_min: { cc: 46, name: "Volume Min", min: 0, max: 127 },
+  vol_position: { cc: 47, name: "Volume Position", min: 0, max: 127 },
+  // Switches (toggle: CC sends 0 or 127)
   dist_enable: { cc: 25, name: "Dist Enable", min: 0, max: 1 },
   drive_enable: { cc: 26, name: "Drive Enable", min: 0, max: 1 },
   eq_enable: { cc: 27, name: "EQ Enable", min: 0, max: 1 },
+  delay_enable: { cc: 28, name: "Delay Enable", min: 0, max: 1 },
+  reverb_enable: { cc: 36, name: "Reverb Enable", min: 0, max: 1 },
+  noise_gate_enable: { cc: 22, name: "Noise Gate Enable", min: 0, max: 1 },
+  mod_fx_enable: { cc: 50, name: "Mod FX Enable", min: 0, max: 1 },
+  bright_switch: { cc: 73, name: "Bright Switch", min: 0, max: 1 },
 };
 
-// Amp model names
+// Amp model names (32 models, indexed 0-31 matching CC 12 values)
 const AMP_MODELS = [
-  "Tube Preamp",
-  "Line 6 Clean",
-  "Line 6 Crunch",
-  "Line 6 Drive",
-  "Line 6 Layer",
-  "Line 6 Insane",
-  "Small Tweed",
-  "Tweed B-Man",
-  "Tiny Tweed",
-  "Blackface Lux",
-  "Double Verb",
-  "Two-Tone",
-  "Hiway 100",
-  "Plexi 45",
-  "Plexi Lead 100",
-  "Plexi Jump Lead",
-  "Plexi Variac",
-  "Brit J-800",
-  "Brit JM Pre",
-  "Match Chief",
-  "Match D/C 30",
-  "MS Crunch",
-  "MS Hi Gain",
-  "Rectified",
-  "Modern Hi Gain",
-  "Fuzz Box",
-  "Jazz Clean",
-  "Boutique #1",
-  "Boutique #2",
-  "Brit Class A",
-  "Line 6 Crunch #2",
-  "Line 6 Blues",
+  "Tube Preamp",          // 0
+  "Line 6 Clean",         // 1
+  "Line 6 Crunch",        // 2
+  "Line 6 Drive",         // 3
+  "Line 6 Layer",         // 4
+  "Small Tweed",          // 5
+  "Tweed Blues",           // 6
+  "Black Panel",           // 7
+  "Modern Class A",        // 8
+  "Brit Class A",          // 9
+  "Brit Blues",            // 10
+  "Brit Classic",          // 11
+  "Brit Hi Gain",          // 12
+  "Treadplate",            // 13
+  "Modern Hi Gain",        // 14
+  "Fuzz Box",              // 15
+  "Jazz Clean",            // 16
+  "Boutique #1",           // 17
+  "Boutique #2",           // 18
+  "Brit Class A #2",       // 19
+  "Brit Class A #3",       // 20
+  "Small Tweed #2",        // 21
+  "Black Panel #2",        // 22
+  "Boutique #3",           // 23
+  "California Crunch #1",  // 24
+  "California Crunch #2",  // 25
+  "Treadplate #2",         // 26
+  "Modern Hi Gain #2",     // 27
+  "Line 6 Twang",          // 28
+  "Line 6 Crunch #2",      // 29
+  "Line 6 Blues",           // 30
+  "Line 6 INSANE",         // 31
 ];
 
-// Cabinet model names
+// Cabinet model names (16 models, indexed 0-15 matching CC 71 values)
 const CAB_MODELS = [
-  "1x8 '60 Fender Tweed Champ",
-  "1x12 '52 Fender Tweed Deluxe",
-  "1x12 '60 Vox AC15",
-  "1x12 '64 Fender Blackface Deluxe",
-  "2x12 '65 Fender Blackface Twin",
-  "2x12 '67 VOX AC30",
-  "2x12 Modern Class A",
-  "4x10 '59 Fender Bassman",
-  "4x10 Line 6",
-  "4x12 '67 Marshall Basketweave w/ Greenbacks",
-  "4x12 '68 Marshall Basketweave w/ Greenbacks",
-  "4x12 Marshall w/ Vintage 30s",
-  "4x12 Line 6",
-  "4x12 Hiway",
-  "4x12 Modern",
-  "No Cabinet",
+  "1x8 '60 Fender Tweed Champ",                      // 0
+  "1x12 '52 Fender Tweed Deluxe",                     // 1
+  "1x12 '60 Vox AC15",                                // 2
+  "1x12 '64 Fender Blackface Deluxe",                 // 3
+  "1x12 '98 Line 6 Flextone",                         // 4
+  "2x12 '65 Fender Blackface Twin",                   // 5
+  "2x12 '67 VOX AC30",                                // 6
+  "2x12 '95 Matchless Chieftain",                     // 7
+  "2x12 '98 Pod Custom 2x12",                         // 8
+  "4x10 '59 Fender Bassman",                          // 9
+  "4x10 '98 Pod Custom 4x10",                         // 10
+  "4x12 '96 Marshall w/ V30s",                        // 11
+  "4x12 '78 Marshall w/ 70s",                         // 12
+  "4x12 '97 Marshall Basketweave w/ Greenbacks",      // 13
+  "4x12 '98 Pod Custom 4x12",                         // 14
+  "No Cabinet",                                        // 15
 ];
 
-// Effect type names
+// Effect type names (16 types, indexed 0-15 matching CC 19 values)
 const EFFECT_TYPES = [
-  "Bypass",
-  "Compressor",
-  "Auto Wah",
-  "Chorus 1",
-  "Chorus 2",
-  "Flanger 1",
-  "Flanger 2",
-  "Rotary",
-  "Phaser",
-  "Tremolo",
-  "Delay",
-  "Delay/Comp",
-  "Delay/Chorus 1",
-  "Delay/Chorus 2",
-  "Delay/Flanger 1",
-  "Delay/Flanger 2",
+  "Chorus 2",         // 0
+  "Flanger 1",        // 1
+  "Rotary",           // 2
+  "Flanger 2",        // 3
+  "Delay/Chorus 1",   // 4
+  "Delay/Tremolo",    // 5
+  "Delay",            // 6
+  "Delay/Comp",       // 7
+  "Chorus 1",         // 8
+  "Tremolo",          // 9
+  "Bypass",           // 10
+  "Compressor",       // 11
+  "Delay/Chorus 2",   // 12
+  "Delay/Flanger 1",  // 13
+  "Delay/Swell",      // 14
+  "Delay/Flanger 2",  // 15
 ];
 
 // --- Color Palette ---
@@ -181,42 +199,64 @@ const COLORS = {
 // Patch data byte offset -> params state key mapping
 // These are the 71 decoded bytes from the nibblized SysEx payload
 const PATCH_PARAM_MAP = {
+  // Switches (positions 0-7)
   0: 'dist_enable',
   1: 'drive_enable',
   2: 'eq_enable',
+  3: 'delay_enable',
+  4: 'mod_fx_enable',
+  5: 'reverb_enable',
+  6: 'noise_gate_enable',
+  7: 'bright_switch',
+  // Preamp (positions 8-15)
   8: 'ampModel',
   9: 'drive',
+  10: 'drive2',
   11: 'bass',
   12: 'mid',
   13: 'treble',
   14: 'presence',
   15: 'chanVol',
+  // Noise gate (positions 16-17)
   16: 'noise_gate',
   17: 'noise_gate_decay',
+  // Wah (positions 18-20)
   18: 'wah_position',
   19: 'wah_bottom',
   20: 'wah_top',
+  // Volume pedal (positions 22-24)
   22: 'vol_level',
+  23: 'vol_min',
+  24: 'vol_position',
+  // Delay (positions 26, 27, 34, 36)
+  26: 'delay_time',
+  27: 'delay_time_fine',
   34: 'delay_feedback',
   36: 'delay_level',
+  // Reverb (positions 38-43)
   38: 'reverb_type',
   39: 'reverb_decay',
   40: 'reverb_tone',
   41: 'reverb_diffusion',
   42: 'reverb_density',
-  43: 'reverb',
+  43: 'reverb_level',
+  // Cabinet (positions 44-45)
   44: 'cabModel',
   45: 'air',
+  // FX config (positions 46-47)
   46: 'effect',
   47: 'effect_tweak',
+  // Shared effect params (positions 48-54)
+  48: 'effect_speed',
   50: 'effect_depth',
   52: 'effect_feedback',
   53: 'effect_predelay',
 };
 
-// Params that use select/enum values (not scaled 0-63 -> 0-127)
+// Params that use select/enum values (value used as-is from patch data)
 const PATCH_SELECT_PARAMS = new Set([
-  'dist_enable', 'drive_enable', 'eq_enable',
+  'dist_enable', 'drive_enable', 'eq_enable', 'delay_enable',
+  'mod_fx_enable', 'reverb_enable', 'noise_gate_enable', 'bright_switch',
   'ampModel', 'cabModel', 'effect', 'reverb_type',
 ]);
 
@@ -269,32 +309,13 @@ function parsePatchDump(data) {
   const name = nameBytes.map((b) => String.fromCharCode(b)).join("").trim();
 
   // Map byte offsets to param values
+  // Decoded nibble bytes are already in the correct 0-127 range (no scaling needed)
   const params = {};
   for (const [offset, key] of Object.entries(PATCH_PARAM_MAP)) {
     const byteIdx = Number(offset);
     const rawValue = decoded[byteIdx];
-    if (PATCH_SELECT_PARAMS.has(key)) {
-      // Select/enum params use value as-is
-      params[key] = rawValue;
-    } else {
-      // Continuous params: patch uses 0-63, CC uses 0-127
-      // Scale: cc_value = Math.min(127, rawValue * 2)
-      params[key] = Math.min(127, rawValue * 2);
-    }
+    params[key] = rawValue;
   }
-
-  // Handle multi-byte effect speed (bytes 48-49)
-  const effectSpeedRaw = (decoded[48] << 8) | decoded[49];
-  // Scale 16-bit value down to 0-127
-  params.effect_speed = Math.min(127, Math.round((effectSpeedRaw / 65535) * 127));
-
-  // Handle multi-byte delay time (bytes 26-29)
-  const delayTimeRaw = (decoded[26] << 24) | (decoded[27] << 16) | (decoded[28] << 8) | decoded[29];
-  // Split into coarse (CC30) and fine (CC31) - both 0-127
-  // Total range 0-16383, coarse = high 7 bits, fine = low 7 bits
-  const delayTime14 = Math.min(16383, delayTimeRaw);
-  params.delay_time = (delayTime14 >> 7) & 0x7f;
-  params.delay_time_fine = delayTime14 & 0x7f;
 
   return { name, params, presetNumber, isEditBuffer };
 }
@@ -892,38 +913,57 @@ export default function PocketPodEditor() {
   const [log, setLog] = useState([]);
   const [midiLogVisible, setMidiLogVisible] = useState(true);
   const [params, setParams] = useState({
+    // Preamp
     ampModel: 0,
-    cabModel: 0,
     drive: 64,
+    drive2: 0,
     bass: 64,
     mid: 64,
     treble: 64,
     chanVol: 100,
-    reverb: 40,
-    effect: 0,
     presence: 64,
-    noise_gate: 0,
-    noise_gate_decay: 64,
-    delay_time: 40,
-    delay_time_fine: 0,
-    delay_feedback: 30,
-    delay_level: 50,
+    // Reverb
+    reverb_level: 40,
+    reverb_type: 0,
     reverb_decay: 64,
     reverb_tone: 64,
     reverb_diffusion: 64,
     reverb_density: 64,
-    reverb_type: 0,
+    // FX config
+    effect: 0,
+    effect_tweak: 64,
     effect_speed: 64,
     effect_depth: 64,
     effect_feedback: 0,
     effect_predelay: 0,
+    // Noise gate
+    noise_gate: 0,
+    noise_gate_decay: 64,
+    // Delay
+    delay_time: 40,
+    delay_time_fine: 0,
+    delay_feedback: 30,
+    delay_level: 50,
+    // Cabinet
+    cabModel: 0,
     air: 0,
+    // Wah
     wah_position: 0,
     wah_bottom: 0,
     wah_top: 127,
+    // Volume pedal
+    vol_level: 100,
+    vol_min: 0,
+    vol_position: 127,
+    // Switches
     dist_enable: 0,
     drive_enable: 0,
     eq_enable: 0,
+    delay_enable: 0,
+    reverb_enable: 0,
+    noise_gate_enable: 0,
+    mod_fx_enable: 0,
+    bright_switch: 0,
   });
   const [presetName, setPresetName] = useState("\u2014");
   const [deviceInfo, setDeviceInfo] = useState(null);
@@ -1065,6 +1105,13 @@ export default function PocketPodEditor() {
                   params: parsed.params,
                 });
                 updated.sort((a, b) => a.number - b.number);
+                // Track fetch progress
+                if (updated.length <= 124) {
+                  setFetchProgress(updated.length);
+                }
+                if (updated.length >= 124) {
+                  setFetchingPresets(false);
+                }
                 return updated;
               });
             }
@@ -1078,7 +1125,9 @@ export default function PocketPodEditor() {
         const val = data[2];
         for (const [key, def] of Object.entries(MIDI_CC_MAP)) {
           if (def.cc === cc) {
-            setParams((prev) => ({ ...prev, [key]: val }));
+            // For toggle params, interpret >= 64 as on (1), < 64 as off (0)
+            const adjustedVal = def.max === 1 ? (val >= 64 ? 1 : 0) : val;
+            setParams((prev) => ({ ...prev, [key]: adjustedVal }));
             break;
           }
         }
@@ -1151,24 +1200,21 @@ export default function PocketPodEditor() {
   const handleParamChange = (key, value) => {
     setParams((prev) => ({ ...prev, [key]: value }));
     if (connected && MIDI_CC_MAP[key]) {
-      sendCC(MIDI_CC_MAP[key].cc, value);
+      // For toggle params, send 127 for on, 0 for off
+      const ccValue = MIDI_CC_MAP[key].max === 1 ? (value ? 127 : 0) : value;
+      sendCC(MIDI_CC_MAP[key].cc, ccValue);
     }
   };
 
   const requestEditBuffer = () => sendSysEx(REQUEST_EDIT_BUFFER);
-  const requestPreset = (num) => sendSysEx(buildPresetRequest(num));
 
-  const fetchAllPresets = async () => {
+  const fetchAllPresets = () => {
     if (!connected || fetchingPresets) return;
     setFetchingPresets(true);
     setPresets([]);
     setFetchProgress(0);
-    for (let i = 0; i < 124; i++) {
-      requestPreset(i);
-      setFetchProgress(i + 1);
-      await new Promise((r) => setTimeout(r, 80));
-    }
-    setFetchingPresets(false);
+    // Send single bulk request — device streams back all 124 programs
+    sendSysEx(REQUEST_ALL_PRESETS);
   };
 
   const loadPreset = (preset) => {
@@ -1768,11 +1814,11 @@ export default function PocketPodEditor() {
               size="lg"
             />
             <ChromeKnob
-              value={params.reverb}
+              value={params.reverb_level}
               min={0}
               max={127}
               label="Reverb"
-              onChange={(v) => handleParamChange("reverb", v)}
+              onChange={(v) => handleParamChange("reverb_level", v)}
               size="lg"
             />
           </div>
