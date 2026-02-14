@@ -983,7 +983,7 @@ export default function PocketPodEditor() {
 
   const inputRef = useRef(null);
   const outputRef = useRef(null);
-  const logEndRef = useRef(null);
+  const logContainerRef = useRef(null);
 
   const addLog = useCallback((dir, data) => {
     const now = new Date();
@@ -1045,9 +1045,12 @@ export default function PocketPodEditor() {
     if (podOut) setSelectedOutput(podOut.id);
   };
 
-  // Scroll log to bottom
+  // Scroll log container to bottom (without moving page focus)
   useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = logContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [log]);
 
   // Handle incoming MIDI messages
@@ -2211,6 +2214,7 @@ export default function PocketPodEditor() {
             </button>
           </div>
           <div
+            ref={logContainerRef}
             style={{
               maxHeight: "200px",
               overflowY: "auto",
@@ -2238,7 +2242,6 @@ export default function PocketPodEditor() {
             {log.map((entry) => (
               <LogEntry key={entry.id} entry={entry} />
             ))}
-            <div ref={logEndRef} />
           </div>
         </BevelPanel>
 
