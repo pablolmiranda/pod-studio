@@ -374,7 +374,7 @@ function BevelPanel({ children, style = {}, screws = false }) {
 }
 
 // --- LED Indicator ---
-function LED({ active = false, color = "green", size = 8 }) {
+function LED({ active = false, color = "green", size = 8, label }) {
   const colors = {
     green: { on: COLORS.ledGreen, off: "#1a3a1a" },
     red: { on: COLORS.ledRed, off: "#3a1a1a" },
@@ -383,6 +383,9 @@ function LED({ active = false, color = "green", size = 8 }) {
   const c = colors[color] || colors.green;
   return (
     <div
+      role="status"
+      aria-label={label ? `${label}: ${active ? "on" : "off"}` : undefined}
+      aria-hidden={!label}
       style={{
         width: size,
         height: size,
@@ -401,6 +404,9 @@ function ToggleButton({ label, active, onToggle, color = "green" }) {
   return (
     <button
       onClick={onToggle}
+      role="switch"
+      aria-checked={active}
+      aria-label={`${label} ${active ? "on" : "off"}`}
       style={{
         display: "flex",
         alignItems: "center",
@@ -437,6 +443,7 @@ function ChromeKnob({ value, min, max, label, onChange, size = "md", variant = "
   const dragging = useRef(false);
   const startY = useRef(0);
   const startValue = useRef(0);
+  const [focused, setFocused] = useState(false);
 
   const sizes = { lg: 80, md: 60, sm: 42 };
   const px = sizes[size] || sizes.md;
@@ -471,6 +478,60 @@ function ChromeKnob({ value, min, max, label, onChange, size = "md", variant = "
     document.removeEventListener("mousemove", handleMouseMove);
     document.removeEventListener("mouseup", handleMouseUp);
   }, [handleMouseMove]);
+
+  // Touch support
+  const handleTouchStart = (e) => {
+    const touch = e.touches[0];
+    dragging.current = true;
+    startY.current = touch.clientY;
+    startValue.current = value;
+    e.preventDefault();
+  };
+
+  const handleTouchMove = useCallback(
+    (e) => {
+      if (!dragging.current) return;
+      const touch = e.touches[0];
+      const delta = startY.current - touch.clientY;
+      const range = max - min;
+      const newValue = Math.round(
+        Math.min(max, Math.max(min, startValue.current + (delta / 150) * range))
+      );
+      if (newValue !== value) onChange(newValue);
+      e.preventDefault();
+    },
+    [value, min, max, onChange]
+  );
+
+  const handleTouchEnd = useCallback(() => {
+    dragging.current = false;
+  }, []);
+
+  // Keyboard support
+  const handleKeyDown = (e) => {
+    const step = e.shiftKey ? 10 : 1;
+    let newValue = value;
+    switch (e.key) {
+      case "ArrowUp":
+      case "ArrowRight":
+        newValue = Math.min(max, value + step);
+        break;
+      case "ArrowDown":
+      case "ArrowLeft":
+        newValue = Math.max(min, value - step);
+        break;
+      case "Home":
+        newValue = min;
+        break;
+      case "End":
+        newValue = max;
+        break;
+      default:
+        return;
+    }
+    e.preventDefault();
+    if (newValue !== value) onChange(newValue);
+  };
 
   const r = px / 2 - 2;
   const cx = px / 2;
@@ -511,8 +572,25 @@ function ChromeKnob({ value, min, max, label, onChange, size = "md", variant = "
         ref={knobRef}
         width={px + 16}
         height={px + 16}
-        style={{ cursor: "ns-resize" }}
+        style={{
+          cursor: "ns-resize",
+          outline: focused ? `2px solid ${COLORS.gold}` : "none",
+          outlineOffset: "2px",
+          borderRadius: "50%",
+        }}
+        tabIndex={0}
+        role="slider"
+        aria-valuemin={min}
+        aria-valuemax={max}
+        aria-valuenow={value}
+        aria-label={label}
         onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onKeyDown={handleKeyDown}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
       >
         <defs>
           <radialGradient id={gradId} cx="35%" cy="30%" r="65%">
@@ -690,6 +768,10 @@ function MenuBar({
   onMidiLogToggle,
   midiLogVisible,
   midiSupported,
+  onNewPreset,
+  onOpenPreset,
+  onSavePreset,
+  onSavePresetAs,
 }) {
   const [openMenu, setOpenMenu] = useState(null);
   const menuRef = useRef(null);
@@ -807,11 +889,11 @@ function MenuBar({
       }}
     >
       <MenuButton label="File" menuId="file">
-        <MenuItem label="New Preset" />
-        <MenuItem label="Open Preset..." />
+        <MenuItem label="New Preset" onClick={onNewPreset} />
+        <MenuItem label="Open Preset..." onClick={onOpenPreset} />
         {separator}
-        <MenuItem label="Save Preset" />
-        <MenuItem label="Save Preset As..." />
+        <MenuItem label="Save Preset" onClick={onSavePreset} />
+        <MenuItem label="Save Preset As..." onClick={onSavePresetAs} />
       </MenuButton>
 
       <MenuButton label="MIDI" menuId="midi">
@@ -884,6 +966,8 @@ function MenuBar({
 
       {/* Connection status in menu bar */}
       <div
+        role="status"
+        aria-live="polite"
         style={{
           display: "flex",
           alignItems: "center",
@@ -894,12 +978,29 @@ function MenuBar({
           fontFamily: "system-ui, sans-serif",
         }}
       >
-        <LED active={connected} color="green" size={6} />
+        <LED active={connected} color="green" size={6} label="Connection status" />
         {connected ? "Connected" : "Disconnected"}
       </div>
     </div>
   );
 }
+
+const DEFAULT_PARAMS = {
+  ampModel: 0, drive: 64, drive2: 0, bass: 64, mid: 64, treble: 64,
+  chanVol: 100, presence: 64, reverb_level: 40, reverb_type: 0,
+  reverb_decay: 64, reverb_tone: 64, reverb_diffusion: 64, reverb_density: 64,
+  effect: 0, effect_tweak: 64, effect_speed: 64, effect_depth: 64,
+  effect_feedback: 0, effect_predelay: 0, noise_gate: 0, noise_gate_decay: 64,
+  delay_time: 40, delay_time_fine: 0, delay_feedback: 30, delay_level: 50,
+  cabModel: 0, air: 0, wah_position: 0, wah_bottom: 0, wah_top: 127,
+  vol_level: 100, vol_min: 0, vol_position: 127,
+  dist_enable: 0, drive_enable: 0, eq_enable: 0, delay_enable: 0,
+  reverb_enable: 0, noise_gate_enable: 0, mod_fx_enable: 0, bright_switch: 0,
+};
+
+const DEFAULT_TONE_NOTES = {
+  song: "", guitarist: "", band: "", notes: "", author: "", pickup: "", style: "",
+};
 
 // --- Main App ---
 export default function PocketPodEditor() {
@@ -912,78 +1013,36 @@ export default function PocketPodEditor() {
   const [connected, setConnected] = useState(false);
   const [log, setLog] = useState([]);
   const [midiLogVisible, setMidiLogVisible] = useState(true);
-  const [params, setParams] = useState({
-    // Preamp
-    ampModel: 0,
-    drive: 64,
-    drive2: 0,
-    bass: 64,
-    mid: 64,
-    treble: 64,
-    chanVol: 100,
-    presence: 64,
-    // Reverb
-    reverb_level: 40,
-    reverb_type: 0,
-    reverb_decay: 64,
-    reverb_tone: 64,
-    reverb_diffusion: 64,
-    reverb_density: 64,
-    // FX config
-    effect: 0,
-    effect_tweak: 64,
-    effect_speed: 64,
-    effect_depth: 64,
-    effect_feedback: 0,
-    effect_predelay: 0,
-    // Noise gate
-    noise_gate: 0,
-    noise_gate_decay: 64,
-    // Delay
-    delay_time: 40,
-    delay_time_fine: 0,
-    delay_feedback: 30,
-    delay_level: 50,
-    // Cabinet
-    cabModel: 0,
-    air: 0,
-    // Wah
-    wah_position: 0,
-    wah_bottom: 0,
-    wah_top: 127,
-    // Volume pedal
-    vol_level: 100,
-    vol_min: 0,
-    vol_position: 127,
-    // Switches
-    dist_enable: 0,
-    drive_enable: 0,
-    eq_enable: 0,
-    delay_enable: 0,
-    reverb_enable: 0,
-    noise_gate_enable: 0,
-    mod_fx_enable: 0,
-    bright_switch: 0,
-  });
+  const [params, setParams] = useState({ ...DEFAULT_PARAMS });
   const [presetName, setPresetName] = useState("\u2014");
   const [deviceInfo, setDeviceInfo] = useState(null);
   const [currentPreset, setCurrentPreset] = useState(0);
   const [presets, setPresets] = useState([]); // Array of {number, name, params}
   const [fetchingPresets, setFetchingPresets] = useState(false);
   const [fetchProgress, setFetchProgress] = useState(0); // 0-124
-  const [toneNotes, setToneNotes] = useState({
-    song: "",
-    guitarist: "",
-    band: "",
-    notes: "",
-    author: "",
-    pickup: "",
-    style: "",
-  });
+  const [toneNotes, setToneNotes] = useState({ ...DEFAULT_TONE_NOTES });
+  const [errors, setErrors] = useState([]); // [{id, message}]
+  const [dirty, setDirty] = useState(false); // unsaved changes tracking
+  const [lastMidiActivity, setLastMidiActivity] = useState(null);
+  const [deviceTimeout, setDeviceTimeout] = useState(false);
 
   const inputRef = useRef(null);
   const outputRef = useRef(null);
   const logContainerRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  const addError = useCallback((message) => {
+    const id = Date.now() + Math.random();
+    setErrors((prev) => [...prev.slice(-4), { id, message }]);
+    // Auto-dismiss after 8 seconds
+    setTimeout(() => {
+      setErrors((prev) => prev.filter((e) => e.id !== id));
+    }, 8000);
+  }, []);
+
+  const dismissError = useCallback((id) => {
+    setErrors((prev) => prev.filter((e) => e.id !== id));
+  }, []);
 
   const addLog = useCallback((dir, data) => {
     const now = new Date();
@@ -1006,6 +1065,7 @@ export default function PocketPodEditor() {
   useEffect(() => {
     if (!navigator.requestMIDIAccess) {
       setMidiSupported(false);
+      addError("Web MIDI API is not available in this browser. Use Chrome or Edge over HTTPS.");
       return;
     }
 
@@ -1019,8 +1079,9 @@ export default function PocketPodEditor() {
       .catch((err) => {
         console.error("MIDI access denied:", err);
         setMidiSupported(false);
+        addError(`MIDI access denied: ${err.message || "SysEx permission required. Please allow MIDI access and reload."}`);
       });
-  }, []);
+  }, [addError]);
 
   const updatePorts = (access) => {
     const ins = [];
@@ -1053,11 +1114,40 @@ export default function PocketPodEditor() {
     }
   }, [log]);
 
+  // Warn before closing page with unsaved changes
+  useEffect(() => {
+    const handler = (e) => {
+      if (dirty && connected) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty, connected]);
+
+  // Device timeout detection
+  useEffect(() => {
+    if (!connected || !lastMidiActivity) return;
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - lastMidiActivity;
+      if (elapsed > 30000) {
+        addError("Device appears unresponsive (30s timeout). Auto-disconnecting.");
+        disconnect(true);
+      } else if (elapsed > 10000) {
+        setDeviceTimeout(true);
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [connected, lastMidiActivity, addError]);
+
   // Handle incoming MIDI messages
   const handleMidiMessage = useCallback(
     (event) => {
       const data = Array.from(event.data);
       addLog("IN", data);
+      setLastMidiActivity(Date.now());
+      setDeviceTimeout(false);
 
       // Check for SysEx
       if (data[0] === SYSEX_START) {
@@ -1156,20 +1246,31 @@ export default function PocketPodEditor() {
     const input = midiAccess.inputs.get(selectedInput);
     const output = midiAccess.outputs.get(selectedOutput);
 
-    if (input && output) {
-      input.onmidimessage = handleMidiMessage;
-      inputRef.current = input;
-      outputRef.current = output;
-      setConnected(true);
-      setLog([]);
-
-      setTimeout(() => {
-        sendSysEx(IDENTITY_REQUEST);
-      }, 200);
+    if (!input || !output) {
+      addError("Failed to connect: MIDI port not found. The device may have been disconnected.");
+      return;
     }
+
+    input.onmidimessage = handleMidiMessage;
+    inputRef.current = input;
+    outputRef.current = output;
+    setConnected(true);
+    setDirty(false);
+    setLog([]);
+    setLastMidiActivity(Date.now());
+    setDeviceTimeout(false);
+
+    setTimeout(() => {
+      sendSysEx(IDENTITY_REQUEST);
+    }, 200);
   };
 
-  const disconnect = () => {
+  const disconnect = (force = false) => {
+    if (!force && dirty) {
+      if (!window.confirm("You have unsaved parameter changes. Disconnect anyway?")) {
+        return;
+      }
+    }
     if (inputRef.current) {
       inputRef.current.onmidimessage = null;
       inputRef.current = null;
@@ -1178,6 +1279,9 @@ export default function PocketPodEditor() {
     setConnected(false);
     setDeviceInfo(null);
     setPresetName("\u2014");
+    setDirty(false);
+    setLastMidiActivity(null);
+    setDeviceTimeout(false);
   };
 
   const sendSysEx = (data) => {
@@ -1202,6 +1306,7 @@ export default function PocketPodEditor() {
 
   const handleParamChange = (key, value) => {
     setParams((prev) => ({ ...prev, [key]: value }));
+    setDirty(true);
     if (connected && MIDI_CC_MAP[key]) {
       // For toggle params, send 127 for on, 0 for off
       const ccValue = MIDI_CC_MAP[key].max === 1 ? (value ? 127 : 0) : value;
@@ -1227,6 +1332,66 @@ export default function PocketPodEditor() {
     setParams((prev) => ({ ...prev, ...preset.params }));
     setPresetName(preset.name || `Preset ${preset.number + 1}`);
     setCurrentPreset(preset.number);
+    setDirty(false);
+  };
+
+  // --- File operations ---
+  const newPreset = () => {
+    if (dirty && !window.confirm("Discard unsaved changes and create a new preset?")) return;
+    setParams({ ...DEFAULT_PARAMS });
+    setPresetName("New Preset");
+    setToneNotes({ ...DEFAULT_TONE_NOTES });
+    setDirty(false);
+  };
+
+  const openPreset = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileOpen = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (!data.params || typeof data.params !== "object") {
+          addError("Invalid preset file: missing params object.");
+          return;
+        }
+        setParams((prev) => ({ ...prev, ...data.params }));
+        setPresetName(data.name || file.name.replace(/\.json$/, ""));
+        if (data.toneNotes) setToneNotes((prev) => ({ ...prev, ...data.toneNotes }));
+        setDirty(false);
+      } catch {
+        addError("Failed to parse preset file. Expected valid JSON.");
+      }
+    };
+    reader.readAsText(file);
+    // Reset input so same file can be re-opened
+    e.target.value = "";
+  };
+
+  const savePreset = (saveAs = false) => {
+    const name = saveAs
+      ? window.prompt("Preset name:", presetName === "\u2014" ? "My Preset" : presetName)
+      : (presetName === "\u2014" ? "My Preset" : presetName);
+    if (!name) return;
+    const data = {
+      version: 1,
+      name,
+      params: { ...params },
+      toneNotes: { ...toneNotes },
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${name.replace(/[^a-zA-Z0-9_-]/g, "_")}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setPresetName(name);
+    setDirty(false);
   };
 
   // --- Select style used in dropdowns ---
@@ -1277,6 +1442,15 @@ export default function PocketPodEditor() {
       `}</style>
 
       <div style={{ width: "960px", margin: "0 auto" }}>
+        {/* Hidden file input for Open Preset */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          style={{ display: "none" }}
+          onChange={handleFileOpen}
+        />
+
         {/* Menu Bar */}
         <MenuBar
           connected={connected}
@@ -1288,7 +1462,7 @@ export default function PocketPodEditor() {
           onSelectInput={setSelectedInput}
           onSelectOutput={setSelectedOutput}
           onConnect={connect}
-          onDisconnect={disconnect}
+          onDisconnect={() => disconnect()}
           onRequestEditBuffer={requestEditBuffer}
           onRequestIdentity={() => sendSysEx(IDENTITY_REQUEST)}
           onFetchAllPresets={fetchAllPresets}
@@ -1296,6 +1470,10 @@ export default function PocketPodEditor() {
           onMidiLogToggle={() => setMidiLogVisible((v) => !v)}
           midiLogVisible={midiLogVisible}
           midiSupported={midiSupported}
+          onNewPreset={newPreset}
+          onOpenPreset={openPreset}
+          onSavePreset={() => savePreset(false)}
+          onSavePresetAs={() => savePreset(true)}
         />
 
         {/* MIDI Not Supported Warning */}
@@ -1318,6 +1496,63 @@ export default function PocketPodEditor() {
                 Use Chrome/Edge over HTTPS or localhost. SysEx must be granted.
               </span>
             </div>
+          </div>
+        )}
+
+        {/* Error banners */}
+        {errors.map((err) => (
+          <div
+            key={err.id}
+            role="alert"
+            style={{
+              background: "#3a1010",
+              border: "1px solid #7a2020",
+              padding: "8px 16px",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              fontSize: "12px",
+              marginTop: "2px",
+            }}
+          >
+            <LED active color="red" size={8} />
+            <span style={{ flex: 1, color: "#ff9999" }}>{err.message}</span>
+            <button
+              onClick={() => dismissError(err.id)}
+              aria-label="Dismiss error"
+              style={{
+                background: "none",
+                border: "none",
+                color: "#ff6666",
+                cursor: "pointer",
+                fontSize: "14px",
+                padding: "0 4px",
+              }}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+
+        {/* Device timeout warning */}
+        {deviceTimeout && connected && (
+          <div
+            role="alert"
+            style={{
+              background: "#3a2a10",
+              border: "1px solid #7a6a20",
+              padding: "8px 16px",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              fontSize: "12px",
+              marginTop: "2px",
+            }}
+          >
+            <LED active color="amber" size={8} />
+            <span style={{ color: "#ffcc66" }}>
+              No response from device for 10+ seconds. Check connection.
+            </span>
           </div>
         )}
 
@@ -1402,7 +1637,7 @@ export default function PocketPodEditor() {
             </div>
 
             <button
-              onClick={connected ? disconnect : connect}
+              onClick={connected ? () => disconnect() : connect}
               disabled={!midiSupported || (!connected && (!selectedInput || !selectedOutput))}
               style={{
                 padding: "6px 20px",
@@ -1535,6 +1770,7 @@ export default function PocketPodEditor() {
                 <button
                   key={preset.number}
                   onClick={() => loadPreset(preset)}
+                  aria-label={`Load preset ${preset.number + 1}: ${preset.name || "unnamed"}`}
                   style={{
                     display: "flex",
                     gap: "10px",
@@ -1777,6 +2013,14 @@ export default function PocketPodEditor() {
               size="lg"
             />
             <ChromeKnob
+              value={params.drive2}
+              min={0}
+              max={127}
+              label="Drive 2"
+              onChange={(v) => handleParamChange("drive2", v)}
+              size="lg"
+            />
+            <ChromeKnob
               value={params.bass}
               min={0}
               max={127}
@@ -1831,7 +2075,15 @@ export default function PocketPodEditor() {
         <div style={{ display: "flex", gap: "4px", marginTop: "4px" }}>
           {/* Noise Gate */}
           <BevelPanel style={{ flex: "1 1 180px", padding: "10px 12px" }}>
-            {sectionLabel("Noise Gate")}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              {sectionLabel("Noise Gate")}
+              <ToggleButton
+                label="Gate"
+                active={params.noise_gate_enable === 1}
+                onToggle={() => handleParamChange("noise_gate_enable", params.noise_gate_enable === 1 ? 0 : 1)}
+                color="green"
+              />
+            </div>
             <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
               <ChromeKnob
                 value={params.noise_gate}
@@ -1873,11 +2125,25 @@ export default function PocketPodEditor() {
               onToggle={() => handleParamChange("eq_enable", params.eq_enable === 1 ? 0 : 1)}
               color="green"
             />
+            <ToggleButton
+              label="Bright"
+              active={params.bright_switch === 1}
+              onToggle={() => handleParamChange("bright_switch", params.bright_switch === 1 ? 0 : 1)}
+              color="amber"
+            />
           </BevelPanel>
 
           {/* Reverb Detail */}
           <BevelPanel style={{ flex: "2 1 340px", padding: "10px 12px" }}>
-            {sectionLabel("Reverb Detail")}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              {sectionLabel("Reverb Detail")}
+              <ToggleButton
+                label="Reverb"
+                active={params.reverb_enable === 1}
+                onToggle={() => handleParamChange("reverb_enable", params.reverb_enable === 1 ? 0 : 1)}
+                color="green"
+              />
+            </div>
             <div style={{ display: "flex", gap: "4px", justifyContent: "center", flexWrap: "wrap", alignItems: "flex-start" }}>
               <ChromeKnob
                 value={params.reverb_decay}
@@ -1941,7 +2207,15 @@ export default function PocketPodEditor() {
         <div style={{ display: "flex", gap: "4px", marginTop: "4px" }}>
           {/* Delay */}
           <BevelPanel style={{ flex: "1 1 50%", padding: "10px 12px" }}>
-            {sectionLabel("Delay")}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              {sectionLabel("Delay")}
+              <ToggleButton
+                label="Delay"
+                active={params.delay_enable === 1}
+                onToggle={() => handleParamChange("delay_enable", params.delay_enable === 1 ? 0 : 1)}
+                color="green"
+              />
+            </div>
             <div style={{ display: "flex", gap: "6px", justifyContent: "center", flexWrap: "wrap" }}>
               <ChromeKnob
                 value={params.delay_time}
@@ -1980,8 +2254,24 @@ export default function PocketPodEditor() {
 
           {/* Effect Params */}
           <BevelPanel style={{ flex: "1 1 50%", padding: "10px 12px" }}>
-            {sectionLabel("Effect Parameters")}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              {sectionLabel("Effect Parameters")}
+              <ToggleButton
+                label="Mod FX"
+                active={params.mod_fx_enable === 1}
+                onToggle={() => handleParamChange("mod_fx_enable", params.mod_fx_enable === 1 ? 0 : 1)}
+                color="green"
+              />
+            </div>
             <div style={{ display: "flex", gap: "6px", justifyContent: "center", flexWrap: "wrap" }}>
+              <ChromeKnob
+                value={params.effect_tweak}
+                min={0}
+                max={127}
+                label="Tweak"
+                onChange={(v) => handleParamChange("effect_tweak", v)}
+                size="md"
+              />
               <ChromeKnob
                 value={params.effect_speed}
                 min={0}
@@ -2180,6 +2470,40 @@ export default function PocketPodEditor() {
               max={127}
               label="Top Freq."
               onChange={(v) => handleParamChange("wah_top", v)}
+              size="md"
+              variant="blue"
+            />
+          </div>
+        </BevelPanel>
+
+        {/* ============ VOLUME PEDAL ============ */}
+        <BevelPanel style={{ marginTop: "4px", padding: "10px 16px" }}>
+          {sectionLabel("Volume Pedal")}
+          <div style={{ display: "flex", gap: "16px", justifyContent: "center" }}>
+            <ChromeKnob
+              value={params.vol_position}
+              min={0}
+              max={127}
+              label="Position"
+              onChange={(v) => handleParamChange("vol_position", v)}
+              size="md"
+              variant="blue"
+            />
+            <ChromeKnob
+              value={params.vol_level}
+              min={0}
+              max={127}
+              label="Level"
+              onChange={(v) => handleParamChange("vol_level", v)}
+              size="md"
+              variant="blue"
+            />
+            <ChromeKnob
+              value={params.vol_min}
+              min={0}
+              max={127}
+              label="Min Vol"
+              onChange={(v) => handleParamChange("vol_min", v)}
               size="md"
               variant="blue"
             />
