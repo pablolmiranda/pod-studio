@@ -1496,14 +1496,6 @@ export default function PocketPodEditor() {
               size="lg"
             />
             <ChromeKnob
-              value={params.drive2}
-              min={0}
-              max={127}
-              label="Drive 2"
-              onChange={(v) => handleParamChange("drive2", v)}
-              size="lg"
-            />
-            <ChromeKnob
               value={params.bass}
               min={0}
               max={127}
