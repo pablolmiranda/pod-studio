@@ -7,11 +7,24 @@ A web-based editor for the **Line 6 Pocket POD** guitar effects processor. Commu
 - React 19.2 + Vite 7.3
 - Single-page app, single main component: `src/PocketPodEditor.jsx` (~2,270 lines)
 - No backend — all communication happens directly via browser Web MIDI API
+- Testing: vitest + jsdom + @testing-library/react
 
 ## Reference Implementation
 - `extras/main.js` — 36,278-line Angular 8/9 app from pocket-pod.web.app (source of truth for protocol)
 - `extras/scripts.js` — vendor bundle (WebMidi.js, jQuery 3.4.1, roundSlider 1.4.0)
 - These files are reference material only, not part of the build
+
+## Development process
+ - Create unit test for every change
+ - Before commit any code, run all the unit tests to make sure there is no regressions
+ - Fix any broken tests
+
+## Testing
+- Run tests: `npm test` (watch mode) or `npx vitest run` (single run)
+- Test files live in `src/__tests__/` — protocol, components, and editor suites
+- Testable internals (functions, constants, UI components) are named-exported from `PocketPodEditor.jsx`
+- Mock `navigator.requestMIDIAccess` to simulate Web MIDI API in editor tests
+- jsdom converts hex colors to `rgb()` — assert with `rgb(r, g, b)` not `#hex`
 
 ## Device Protocol
 

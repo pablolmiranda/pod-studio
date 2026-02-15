@@ -763,6 +763,16 @@ const DEFAULT_TONE_NOTES = {
   song: "", guitarist: "", band: "", notes: "", author: "", pickup: "", style: "",
 };
 
+export {
+  decodeNibbles, decodePatchName, parsePatchDump,
+  MIDI_CC_MAP, PATCH_PARAM_MAP, PATCH_SELECT_PARAMS,
+  AMP_MODELS, CAB_MODELS, EFFECT_TYPES, COLORS,
+  DEFAULT_PARAMS, DEFAULT_TONE_NOTES,
+  LINE6_MANUFACTURER_ID, POCKET_POD_DEVICE_ID, MIDI_CHANNEL,
+  SYSEX_START, SYSEX_END, IDENTITY_REQUEST, REQUEST_EDIT_BUFFER, REQUEST_ALL_PRESETS,
+  LED, ToggleButton, ChromeKnob, BevelPanel, LogEntry, ScrewHead,
+};
+
 // --- Main App ---
 export default function PocketPodEditor() {
   const [midiAccess, setMidiAccess] = useState(null);
