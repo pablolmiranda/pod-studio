@@ -120,7 +120,7 @@ describe('PocketPodEditor', () => {
     await act(async () => {
       render(<PocketPodEditor />);
     });
-    expect(screen.getByText('pocket POD')).toBeInTheDocument();
+    expect(screen.getByText('Pod Studio')).toBeInTheDocument();
   });
 
   it('shows "OFF" state initially', async () => {

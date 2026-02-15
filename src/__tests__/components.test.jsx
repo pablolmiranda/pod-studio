@@ -29,14 +29,15 @@ describe('LED', () => {
   it('renders with red color', () => {
     const { container } = render(<LED active color="red" />);
     const led = container.firstChild;
-    // jsdom converts hex to rgb()
-    expect(led.style.background).toContain('255');
+    // #f85149 -> rgb(248, 81, 73)
+    expect(led.style.background).toContain('248');
   });
 
   it('renders with amber color', () => {
     const { container } = render(<LED active color="amber" />);
     const led = container.firstChild;
-    expect(led.style.background).toContain('255');
+    // #d29922 -> rgb(210, 153, 34)
+    expect(led.style.background).toContain('210');
   });
 
   it('has accessibility attributes with label', () => {
@@ -98,10 +99,10 @@ describe('BevelPanel', () => {
     expect(screen.getByTestId('child')).toBeInTheDocument();
   });
 
-  it('renders screws when screws prop is true', () => {
+  it('accepts screws prop (no-op in modern design)', () => {
     const { container } = render(<BevelPanel screws>Content</BevelPanel>);
-    const svgs = container.querySelectorAll('svg');
-    expect(svgs.length).toBe(4); // 4 corner screws
+    // Screws are no longer rendered in the modern design
+    expect(container.firstChild).toBeInTheDocument();
   });
 
   it('does not render screws when screws prop is false/omitted', () => {
@@ -115,6 +116,27 @@ describe('BevelPanel', () => {
       <BevelPanel style={{ marginTop: '10px' }}>Content</BevelPanel>
     );
     expect(container.firstChild.style.marginTop).toBe('10px');
+  });
+
+  it('has straight edges (no border-radius)', () => {
+    const { container } = render(<BevelPanel>Content</BevelPanel>);
+    expect(container.firstChild.style.borderRadius).toBe('0');
+  });
+
+  it('defaults to main variant with left border only', () => {
+    const { container } = render(<BevelPanel>Content</BevelPanel>);
+    const panel = container.firstChild;
+    expect(panel.style.borderLeft).toContain('2px solid');
+    expect(panel.style.border).not.toContain('1px solid');
+  });
+
+  it('sidebar variant has border on top, bottom, left but not right', () => {
+    const { container } = render(<BevelPanel variant="sidebar">Content</BevelPanel>);
+    const panel = container.firstChild;
+    expect(panel.style.borderTop).toContain('1px solid');
+    expect(panel.style.borderBottom).toContain('1px solid');
+    expect(panel.style.borderLeft).toContain('1px solid');
+    expect(panel.style.borderRight).toBe('');
   });
 });
 
@@ -203,41 +225,27 @@ describe('LogEntry', () => {
     expect(screen.getByText('B0 0C 05')).toBeInTheDocument();
   });
 
-  it('uses green color for IN direction', () => {
+  it('uses success color for IN direction', () => {
     const entry = { time: '00:00:00', dir: 'IN', data: 'test', id: 1 };
     render(<LogEntry entry={entry} />);
     const dirSpan = screen.getByText('IN');
-    // jsdom converts #00ff44 to rgb(0, 255, 68)
-    expect(dirSpan.style.color).toContain('0, 255, 68');
+    // #2ea043 -> rgb(46, 160, 67)
+    expect(dirSpan.style.color).toContain('46, 160, 67');
   });
 
-  it('uses gold color for OUT direction', () => {
+  it('uses accent color for OUT direction', () => {
     const entry = { time: '00:00:00', dir: 'OUT', data: 'test', id: 1 };
     render(<LogEntry entry={entry} />);
     const dirSpan = screen.getByText('OUT');
-    // jsdom converts #c8a840 to rgb(200, 168, 64)
-    expect(dirSpan.style.color).toContain('200, 168, 64');
+    // #4c9aff -> rgb(76, 154, 255)
+    expect(dirSpan.style.color).toContain('76, 154, 255');
   });
 });
 
-// --- ScrewHead ---
+// --- ScrewHead (deprecated) ---
 describe('ScrewHead', () => {
-  it('renders an SVG element', () => {
+  it('renders null (deprecated in modern design)', () => {
     const { container } = render(<ScrewHead x={0} y={0} />);
-    const svg = container.querySelector('svg');
-    expect(svg).toBeInTheDocument();
-  });
-
-  it('positions absolutely at given coordinates', () => {
-    const { container } = render(<ScrewHead x={10} y={20} size={12} />);
-    const svg = container.querySelector('svg');
-    expect(svg.style.position).toBe('absolute');
-  });
-
-  it('uses specified size', () => {
-    const { container } = render(<ScrewHead x={0} y={0} size={16} />);
-    const svg = container.querySelector('svg');
-    expect(svg.getAttribute('width')).toBe('16');
-    expect(svg.getAttribute('height')).toBe('16');
+    expect(container.innerHTML).toBe('');
   });
 });

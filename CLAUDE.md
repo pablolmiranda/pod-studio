@@ -5,7 +5,7 @@ A web-based editor for the **Line 6 Pocket POD** guitar effects processor. Commu
 
 ## Tech Stack
 - React 19.2 + Vite 7.3
-- Single-page app, single main component: `src/PocketPodEditor.jsx` (~2,270 lines)
+- Single-page app, single main component: `src/PocketPodEditor.jsx` (~1,800 lines)
 - No backend — all communication happens directly via browser Web MIDI API
 - Testing: vitest + jsdom + @testing-library/react
 
@@ -52,9 +52,22 @@ A web-based editor for the **Line 6 Pocket POD** guitar effects processor. Commu
 - `parsePatchDump()` — decodes SysEx nibble-encoded patch data into parameter object
 - `fetchAllPresets()` — sends single READ_PROGRAM_DUMP_ALL SysEx, tracks progress as responses arrive
 
+## UI Architecture
+- All styling is inline CSS-in-JS (no CSS libraries) — only `src/index.css` has global styles
+- `COLORS` object (~line 170) defines the entire color palette — update here for theme changes
+- `BevelPanel` component accepts `variant` prop: `"main"` (left border only) or `"sidebar"` (3-sided border, no right)
+- Layout uses CSS Grid: `gridTemplateColumns: "240px minmax(0, 960px)"`, 2 rows (auto + 1fr)
+  - Row 1: MIDI Connection (col 1) + Header Panel (col 2) — same grid row ensures matching heights
+  - Row 2: Preset Library (col 1, sticky) + Main Content (col 2)
+- Fonts: Outfit (UI/labels) + JetBrains Mono (values/MIDI data) via Google Fonts import in JSX `<style>` tag
+- ChromeKnob renders as SVG with guitar amp skirted-knob style — uses `useId()` for unique gradient IDs
+- Sub-panels in flex rows (Noise Gate/Toggles/Reverb, Delay/Effects) use `gap: "0"` with left borders as dividers
+
 ## Common Pitfalls
 - Model list ordering must exactly match device firmware indices — wrong order means wrong amp/cab/effect selected
 - Patch param values are already 0-127 after nibble decoding — do not scale them
 - Each patch parameter is a single byte at its position — no multi-byte parameters
 - Toggle CCs must send 0/127 (not 0/1) and interpret incoming >=64 as on
 - Use container `scrollTop` (not `scrollIntoView`) for auto-scrolling the MIDI monitor to avoid hijacking page focus
+- BevelPanel `variant` prop changes border style — tests should assert `borderLeft`/`borderTop` individually, not shorthand `border`
+- When restructuring layout (flex→grid), existing tests usually still pass since they test content/roles not layout

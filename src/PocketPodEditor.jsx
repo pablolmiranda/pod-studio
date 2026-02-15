@@ -168,28 +168,50 @@ const EFFECT_TYPES = [
 
 // --- Color Palette ---
 const COLORS = {
-  panelDark: "#3a1c0c",
-  panelMid: "#4a2810",
-  panelLight: "#5a3218",
-  panelHighlight: "#6a3c20",
-  bevelLight: "#7a4c2a",
-  bevelDark: "#2a1008",
-  chrome: "#c0c0c0",
-  chromeDark: "#808080",
-  chromeLight: "#e8e8e8",
-  gold: "#c8a840",
-  goldLight: "#d8b850",
-  goldDark: "#a88830",
-  ledGreen: "#00ff44",
-  ledRed: "#ff2222",
-  ledAmber: "#ffaa00",
-  ledOff: "#333322",
-  text: "#ddd0c0",
-  textDim: "#998870",
-  textBright: "#fff0dd",
-  displayBg: "#1a2a1a",
-  displayText: "#44dd44",
-  bodyBg: "#1a0a04",
+  // Surface hierarchy (dark to light)
+  bg:            "#0d0f12",
+  surface0:      "#14171c",
+  surface1:      "#1a1e25",
+  surface2:      "#21262e",
+  surface3:      "#2a303a",
+
+  // Borders
+  border:        "#2a303a",
+  borderSubtle:  "#1e232b",
+  borderFocus:   "#4c9aff",
+
+  // Text
+  textPrimary:   "#e1e4e8",
+  textSecondary: "#8b949e",
+  textMuted:     "#484f58",
+  textOnAccent:  "#0d0f12",
+
+  // Accent (Electric Blue)
+  accent:        "#4c9aff",
+  accentHover:   "#6db3ff",
+  accentMuted:   "#1c3a5e",
+
+  // Status
+  success:       "#2ea043",
+  error:         "#f85149",
+  errorBg:       "#2d1418",
+  warning:       "#d29922",
+  warningBg:     "#2a2017",
+  ledOff:        "#1e232b",
+
+  // Display
+  displayBg:     "#0a0e14",
+  displayText:   "#4c9aff",
+
+  // Knob
+  knobBody:      "#2a303a",
+  knobTrack:     "#1a1e25",
+  knobArc:       "#4c9aff",
+  knobPointer:   "#e1e4e8",
+
+  // Scrollbar
+  scrollTrack:   "#14171c",
+  scrollThumb:   "#2a303a",
 };
 
 // Patch data byte offset -> params state key mapping
@@ -316,54 +338,30 @@ function parsePatchDump(data) {
   return { name, params, presetNumber, isEditBuffer };
 }
 
-// --- Screw Head SVG ---
-function ScrewHead({ x, y, size = 12 }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      style={{ position: "absolute", left: x, top: y }}
-      viewBox="0 0 20 20"
-    >
-      <circle cx="10" cy="10" r="9" fill="#5a4a3a" stroke="#3a2a1a" strokeWidth="1" />
-      <circle cx="10" cy="10" r="7" fill="url(#screwGrad)" />
-      <line x1="4" y1="10" x2="16" y2="10" stroke="#3a2a1a" strokeWidth="1.2" />
-      <line x1="10" y1="4" x2="10" y2="16" stroke="#3a2a1a" strokeWidth="1.2" />
-      <defs>
-        <radialGradient id="screwGrad" cx="40%" cy="35%">
-          <stop offset="0%" stopColor="#9a8a7a" />
-          <stop offset="50%" stopColor="#7a6a5a" />
-          <stop offset="100%" stopColor="#5a4a3a" />
-        </radialGradient>
-      </defs>
-    </svg>
-  );
-}
+// --- ScrewHead (deprecated, kept for export compat) ---
+function ScrewHead() { return null; }
 
-// --- Bevel Panel ---
-function BevelPanel({ children, style = {}, screws = false }) {
+// --- Card (replaces BevelPanel) ---
+function BevelPanel({ children, style = {}, screws = false, variant = "main" }) {
+  const baseStyle = {
+    background: COLORS.surface1,
+    borderRadius: "0",
+    padding: "16px",
+  };
+  if (variant === "sidebar") {
+    baseStyle.borderTop = `1px solid ${COLORS.border}`;
+    baseStyle.borderBottom = `1px solid ${COLORS.border}`;
+    baseStyle.borderLeft = `1px solid ${COLORS.border}`;
+  } else {
+    baseStyle.borderLeft = `2px solid ${COLORS.border}`;
+  }
   return (
     <div
       style={{
-        position: "relative",
-        background: `linear-gradient(180deg, ${COLORS.panelMid} 0%, ${COLORS.panelDark} 100%)`,
-        borderTop: `2px solid ${COLORS.bevelLight}`,
-        borderLeft: `2px solid ${COLORS.bevelLight}`,
-        borderRight: `2px solid ${COLORS.bevelDark}`,
-        borderBottom: `2px solid ${COLORS.bevelDark}`,
-        borderRadius: "3px",
-        padding: "12px",
+        ...baseStyle,
         ...style,
       }}
     >
-      {screws && (
-        <>
-          <ScrewHead x={6} y={6} size={11} />
-          <ScrewHead x="calc(100% - 17px)" y={6} size={11} />
-          <ScrewHead x={6} y="calc(100% - 17px)" size={11} />
-          <ScrewHead x="calc(100% - 17px)" y="calc(100% - 17px)" size={11} />
-        </>
-      )}
       {children}
     </div>
   );
@@ -372,9 +370,9 @@ function BevelPanel({ children, style = {}, screws = false }) {
 // --- LED Indicator ---
 function LED({ active = false, color = "green", size = 8, label }) {
   const colors = {
-    green: { on: COLORS.ledGreen, off: "#1a3a1a" },
-    red: { on: COLORS.ledRed, off: "#3a1a1a" },
-    amber: { on: COLORS.ledAmber, off: "#3a2a1a" },
+    green: { on: COLORS.success, off: COLORS.ledOff },
+    red: { on: COLORS.error, off: COLORS.ledOff },
+    amber: { on: COLORS.warning, off: COLORS.ledOff },
   };
   const c = colors[color] || colors.green;
   return (
@@ -387,9 +385,10 @@ function LED({ active = false, color = "green", size = 8, label }) {
         height: size,
         borderRadius: "50%",
         background: active ? c.on : c.off,
-        boxShadow: active ? `0 0 ${size}px ${c.on}88, 0 0 ${size * 2}px ${c.on}44` : "none",
-        border: "1px solid #222",
+        boxShadow: active ? `0 0 ${size}px ${c.on}66, 0 0 ${size * 2}px ${c.on}33` : "none",
+        border: active ? "none" : `1px solid ${COLORS.border}`,
         flexShrink: 0,
+        transition: "all 200ms ease",
       }}
     />
   );
@@ -406,24 +405,19 @@ function ToggleButton({ label, active, onToggle, color = "green" }) {
       style={{
         display: "flex",
         alignItems: "center",
-        gap: "6px",
-        padding: "4px 10px",
-        background: active
-          ? `linear-gradient(180deg, #5a4a3a, #3a2a1a)`
-          : `linear-gradient(180deg, #4a3a2a, #2a1a0a)`,
-        border: active
-          ? "1px inset #2a1a0a"
-          : "1px outset #6a5a4a",
-        borderRadius: "3px",
-        color: COLORS.text,
-        fontSize: "10px",
-        fontWeight: "bold",
-        letterSpacing: "0.5px",
+        gap: "8px",
+        padding: "6px 14px",
+        background: active ? COLORS.accentMuted : COLORS.surface2,
+        border: `1px solid ${active ? COLORS.accent : COLORS.border}`,
+        borderRadius: "6px",
+        color: active ? COLORS.accent : COLORS.textSecondary,
+        fontSize: "11px",
+        fontWeight: 500,
         cursor: "pointer",
-        fontFamily: "system-ui, sans-serif",
-        textTransform: "uppercase",
+        fontFamily: "'Outfit', sans-serif",
         minWidth: "70px",
         justifyContent: "center",
+        transition: "all 150ms ease",
       }}
     >
       <LED active={active} color={color} size={6} />
@@ -432,16 +426,15 @@ function ToggleButton({ label, active, onToggle, color = "green" }) {
   );
 }
 
-// --- Chrome Knob ---
-function ChromeKnob({ value, min, max, label, onChange, size = "md", variant = "silver" }) {
-  const uid = useId();
+// --- Arc Knob ---
+function ChromeKnob({ value, min, max, label, onChange, size = "md", variant }) {
   const knobRef = useRef(null);
   const dragging = useRef(false);
   const startY = useRef(0);
   const startValue = useRef(0);
   const [focused, setFocused] = useState(false);
 
-  const sizes = { lg: 80, md: 60, sm: 42 };
+  const sizes = { lg: 84, md: 64, sm: 48 };
   const px = sizes[size] || sizes.md;
 
   const normalizedValue = (value - min) / (max - min);
@@ -529,30 +522,35 @@ function ChromeKnob({ value, min, max, label, onChange, size = "md", variant = "
     if (newValue !== value) onChange(newValue);
   };
 
-  const r = px / 2 - 2;
-  const cx = px / 2;
-  const cy = px / 2;
+  // Knob geometry
+  const uid = useId();
+  const svgSize = px + 20;
+  const center = svgSize / 2;
+  const knobR = px / 2;        // Main knob body radius
+  const skirtR = knobR + 4;    // Slightly wider skirt/base
+  const tickR = skirtR + 5;    // Tick marks radius
 
-  const isBlue = variant === "blue";
   const gradId = `knobGrad-${uid}`;
   const shineId = `knobShine-${uid}`;
 
-  // Tick marks
+  // 11 tick marks spanning 270 degrees
   const tickCount = 11;
   const ticks = Array.from({ length: tickCount }, (_, i) => {
     const tickAngle = (-135 + (i / (tickCount - 1)) * 270) * (Math.PI / 180);
-    const innerR = r + 3;
-    const outerR = r + 7;
+    const innerR = tickR - 3;
+    const outerR = tickR + 2;
     return {
-      x1: cx + Math.cos(tickAngle) * innerR,
-      y1: cy + Math.sin(tickAngle) * innerR,
-      x2: cx + Math.cos(tickAngle) * outerR,
-      y2: cy + Math.sin(tickAngle) * outerR,
+      x1: center + Math.cos(tickAngle) * innerR,
+      y1: center + Math.sin(tickAngle) * innerR,
+      x2: center + Math.cos(tickAngle) * outerR,
+      y2: center + Math.sin(tickAngle) * outerR,
+      active: i / (tickCount - 1) <= normalizedValue,
     };
   });
 
   const pointerAngleRad = (angle * Math.PI) / 180;
-  const pointerLen = r - 6;
+  const pointerInner = knobR * 0.35;
+  const pointerOuter = knobR - 2;
 
   return (
     <div
@@ -560,18 +558,18 @@ function ChromeKnob({ value, min, max, label, onChange, size = "md", variant = "
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        gap: "2px",
+        gap: "4px",
         userSelect: "none",
       }}
     >
       <svg
         ref={knobRef}
-        width={px + 16}
-        height={px + 16}
+        width={svgSize}
+        height={svgSize}
         style={{
           cursor: "ns-resize",
-          outline: focused ? `2px solid ${COLORS.gold}` : "none",
-          outlineOffset: "2px",
+          outline: focused ? `2px solid ${COLORS.accent}` : "none",
+          outlineOffset: "3px",
           borderRadius: "50%",
         }}
         tabIndex={0}
@@ -589,113 +587,63 @@ function ChromeKnob({ value, min, max, label, onChange, size = "md", variant = "
         onBlur={() => setFocused(false)}
       >
         <defs>
-          <radialGradient id={gradId} cx="35%" cy="30%" r="65%">
-            {isBlue ? (
-              <>
-                <stop offset="0%" stopColor="#a0b8d0" />
-                <stop offset="40%" stopColor="#6080a0" />
-                <stop offset="100%" stopColor="#304860" />
-              </>
-            ) : (
-              <>
-                <stop offset="0%" stopColor="#f0f0f0" />
-                <stop offset="30%" stopColor="#c8c8c8" />
-                <stop offset="70%" stopColor="#888888" />
-                <stop offset="100%" stopColor="#484848" />
-              </>
-            )}
+          {/* Knob body gradient - dark with subtle lighting */}
+          <radialGradient id={gradId} cx="40%" cy="35%" r="60%">
+            <stop offset="0%" stopColor="#4a4a4a" />
+            <stop offset="50%" stopColor="#2a2a2a" />
+            <stop offset="100%" stopColor="#1a1a1a" />
           </radialGradient>
-          <radialGradient id={shineId} cx="35%" cy="25%" r="40%">
-            <stop offset="0%" stopColor="rgba(255,255,255,0.6)" />
+          {/* Specular highlight */}
+          <radialGradient id={shineId} cx="38%" cy="30%" r="35%">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.15)" />
             <stop offset="100%" stopColor="rgba(255,255,255,0)" />
           </radialGradient>
         </defs>
-        <g transform="translate(8, 8)">
-          {/* Tick marks */}
-          {ticks.map((t, i) => (
-            <line
-              key={i}
-              x1={t.x1}
-              y1={t.y1}
-              x2={t.x2}
-              y2={t.y2}
-              stroke={
-                i / (tickCount - 1) <= normalizedValue ? COLORS.gold : "#4a3a2a"
-              }
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-          ))}
 
-          {/* Shadow */}
-          <circle cx={cx + 1} cy={cy + 2} r={r} fill="rgba(0,0,0,0.3)" />
-
-          {/* Outer ring */}
-          <circle
-            cx={cx}
-            cy={cy}
-            r={r}
-            fill={`url(#${gradId})`}
-            stroke="#222"
-            strokeWidth="1.5"
-          />
-
-          {/* Inner ridge rings */}
-          <circle
-            cx={cx}
-            cy={cy}
-            r={r - 3}
-            fill="none"
-            stroke={isBlue ? "#5070880a" : "rgba(0,0,0,0.15)"}
-            strokeWidth="0.5"
-          />
-          <circle
-            cx={cx}
-            cy={cy}
-            r={r - 6}
-            fill="none"
-            stroke={isBlue ? "#5070880a" : "rgba(0,0,0,0.1)"}
-            strokeWidth="0.5"
-          />
-
-          {/* Specular highlight */}
-          <circle
-            cx={cx}
-            cy={cy}
-            r={r - 1}
-            fill={`url(#${shineId})`}
-          />
-
-          {/* Pointer line */}
+        {/* Tick marks around the knob */}
+        {ticks.map((t, i) => (
           <line
-            x1={cx}
-            y1={cy}
-            x2={cx + Math.cos(pointerAngleRad) * pointerLen}
-            y2={cy + Math.sin(pointerAngleRad) * pointerLen}
-            stroke={isBlue ? "#e0f0ff" : "#222"}
-            strokeWidth="2"
+            key={i}
+            x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2}
+            stroke={t.active ? COLORS.accent : COLORS.textMuted}
+            strokeWidth="1.5"
             strokeLinecap="round"
           />
+        ))}
 
-          {/* Center cap */}
-          <circle
-            cx={cx}
-            cy={cy}
-            r={Math.max(3, r * 0.2)}
-            fill={isBlue ? "#4a6080" : "#aaa"}
-            stroke="#333"
-            strokeWidth="0.5"
-          />
-        </g>
+        {/* Skirt / base ring */}
+        <circle cx={center} cy={center} r={skirtR}
+          fill="#1a1a1a" stroke="#333" strokeWidth="1" />
+
+        {/* Knob body */}
+        <circle cx={center} cy={center} r={knobR}
+          fill={`url(#${gradId})`} stroke="#444" strokeWidth="1" />
+
+        {/* Subtle edge ring for 3D depth */}
+        <circle cx={center} cy={center} r={knobR - 1}
+          fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="0.5" />
+
+        {/* Specular highlight */}
+        <circle cx={center} cy={center} r={knobR - 1}
+          fill={`url(#${shineId})`} />
+
+        {/* Pointer line (white notch) */}
+        <line
+          x1={center + Math.cos(pointerAngleRad) * pointerInner}
+          y1={center + Math.sin(pointerAngleRad) * pointerInner}
+          x2={center + Math.cos(pointerAngleRad) * pointerOuter}
+          y2={center + Math.sin(pointerAngleRad) * pointerOuter}
+          stroke="#e8e8e8"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        />
       </svg>
       <span
         style={{
-          fontSize: size === "sm" ? "8px" : "9px",
-          color: COLORS.textDim,
-          textTransform: "uppercase",
-          letterSpacing: "0.5px",
-          fontFamily: "system-ui, sans-serif",
-          fontWeight: "bold",
+          fontSize: "11px",
+          color: COLORS.textSecondary,
+          fontFamily: "'Outfit', sans-serif",
+          fontWeight: 500,
           textAlign: "center",
           lineHeight: 1.1,
         }}
@@ -704,10 +652,10 @@ function ChromeKnob({ value, min, max, label, onChange, size = "md", variant = "
       </span>
       <span
         style={{
-          fontSize: size === "sm" ? "8px" : "9px",
-          color: COLORS.gold,
+          fontSize: "11px",
+          color: COLORS.accent,
           fontFamily: "'JetBrains Mono', monospace",
-          fontWeight: "bold",
+          fontWeight: 500,
         }}
       >
         {value}
@@ -718,7 +666,7 @@ function ChromeKnob({ value, min, max, label, onChange, size = "md", variant = "
 
 // --- MIDI Log Entry ---
 function LogEntry({ entry }) {
-  const dirColor = entry.dir === "OUT" ? COLORS.gold : COLORS.ledGreen;
+  const isOut = entry.dir === "OUT";
   return (
     <div
       style={{
@@ -727,20 +675,24 @@ function LogEntry({ entry }) {
         fontFamily: "'JetBrains Mono', monospace",
         fontSize: "11px",
         padding: "3px 0",
-        borderBottom: "1px solid #1a1a1a",
+        borderBottom: `1px solid ${COLORS.borderSubtle}`,
       }}
     >
-      <span style={{ color: "#555", minWidth: "70px" }}>{entry.time}</span>
+      <span style={{ color: COLORS.textMuted, minWidth: "70px" }}>{entry.time}</span>
       <span
         style={{
-          color: dirColor,
+          color: isOut ? COLORS.accent : COLORS.success,
+          background: isOut ? COLORS.accentMuted : "#162b1e",
+          padding: "1px 6px",
+          borderRadius: "3px",
           minWidth: "32px",
-          fontWeight: "bold",
+          fontWeight: 500,
+          textAlign: "center",
         }}
       >
         {entry.dir}
       </span>
-      <span style={{ color: "#ccc", wordBreak: "break-all" }}>{entry.data}</span>
+      <span style={{ color: COLORS.textSecondary, wordBreak: "break-all" }}>{entry.data}</span>
     </div>
   );
 }
@@ -1107,27 +1059,28 @@ export default function PocketPodEditor() {
 
   // --- Select style used in dropdowns ---
   const selectStyle = {
-    padding: "3px 6px",
-    background: "#1a1a10",
-    border: "1px solid #555",
-    borderRadius: "2px",
-    color: COLORS.displayText,
-    fontSize: "11px",
-    fontFamily: "'JetBrains Mono', monospace",
-    maxWidth: "180px",
+    padding: "8px 12px",
+    background: COLORS.surface0,
+    border: `1px solid ${COLORS.border}`,
+    borderRadius: "6px",
+    color: COLORS.textPrimary,
+    fontSize: "12px",
+    fontFamily: "'Outfit', sans-serif",
+    fontWeight: 500,
+    maxWidth: "200px",
   };
 
   // --- Section label style ---
   const sectionLabel = (text) => (
     <div
       style={{
-        fontSize: "9px",
-        color: COLORS.textDim,
-        letterSpacing: "1.5px",
+        fontSize: "13px",
+        color: COLORS.textSecondary,
+        letterSpacing: "0.5px",
         textTransform: "uppercase",
-        fontFamily: "system-ui, sans-serif",
-        fontWeight: "bold",
-        marginBottom: "8px",
+        fontFamily: "'Outfit', sans-serif",
+        fontWeight: 600,
+        marginBottom: "12px",
       }}
     >
       {text}
@@ -1137,215 +1090,130 @@ export default function PocketPodEditor() {
   return (
     <div
       style={{
-        background: COLORS.bodyBg,
+        background: COLORS.bg,
         minHeight: "100vh",
-        fontFamily: "system-ui, sans-serif",
-        color: COLORS.text,
+        fontFamily: "'Outfit', sans-serif",
+        color: COLORS.textPrimary,
       }}
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #0a0a0a; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
-        select, button { font-family: system-ui, sans-serif; }
+        ::-webkit-scrollbar-track { background: ${COLORS.scrollTrack}; }
+        ::-webkit-scrollbar-thumb { background: ${COLORS.scrollThumb}; border-radius: 3px; }
+        select, button { font-family: 'Outfit', sans-serif; }
       `}</style>
 
       {/* ---- TOP BAR ---- */}
       <div style={{
-        padding: "12px 16px",
-        textAlign: "center",
-        borderBottom: `1px solid ${COLORS.bevelDark}`,
+        padding: "16px 20px",
+        borderBottom: `1px solid ${COLORS.border}`,
+        display: "flex",
+        alignItems: "baseline",
+        gap: "12px",
       }}>
         <div style={{
-          fontSize: "20px",
-          fontWeight: "bold",
-          letterSpacing: "2px",
-          textTransform: "uppercase",
-          fontFamily: "'JetBrains Mono', monospace",
-          background: `linear-gradient(180deg, ${COLORS.goldLight}, ${COLORS.gold}, ${COLORS.goldDark})`,
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          lineHeight: 1.2,
+          fontSize: "22px",
+          fontWeight: 700,
+          fontFamily: "'Outfit', sans-serif",
+          color: COLORS.textPrimary,
+          letterSpacing: "-0.5px",
         }}>
           Pod Studio
         </div>
         <div style={{
-          fontSize: "8px",
-          color: COLORS.textDim,
-          letterSpacing: "3px",
+          fontSize: "11px",
+          fontWeight: 500,
+          color: COLORS.textMuted,
+          letterSpacing: "2px",
           textTransform: "uppercase",
-          marginTop: "2px",
         }}>
           Pod Products Editor
         </div>
       </div>
 
-      <div style={{ display: "flex", justifyContent: "center", gap: "4px", flex: 1 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "240px minmax(0, 960px)", gridTemplateRows: "auto 1fr", justifyContent: "center", flex: 1 }}>
 
-        {/* ============ SIDEBAR ============ */}
-        <div style={{
-          width: "240px",
-          flexShrink: 0,
-          height: "calc(100vh - 58px)",
-          position: "sticky",
-          top: 0,
-          display: "flex",
-          flexDirection: "column",
-          overflowY: "auto",
-        }}>
-
-          {/* ---- MIDI CONNECTION ---- */}
-          <BevelPanel style={{ padding: "10px 12px" }}>
+          {/* ============ MIDI CONNECTION (Row 1, Col 1) ============ */}
+          <BevelPanel variant="sidebar" style={{ padding: "12px", gridColumn: 1, gridRow: 1, display: "flex", flexDirection: "column" }}>
             {sectionLabel("MIDI Connection")}
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "9px",
-                    color: COLORS.textDim,
-                    marginBottom: "3px",
-                    fontWeight: "bold",
-                    letterSpacing: "0.5px",
-                    textTransform: "uppercase",
-                  }}
-                >
+                <label style={{ display: "block", fontSize: "11px", color: COLORS.textSecondary, marginBottom: "4px", fontWeight: 500 }}>
                   MIDI Input
                 </label>
                 <select
                   value={selectedInput}
                   onChange={(e) => setSelectedInput(e.target.value)}
                   disabled={connected}
-                  style={{
-                    width: "100%",
-                    padding: "5px 8px",
-                    background: "#1a1a10",
-                    border: "1px solid #555",
-                    borderRadius: "2px",
-                    color: COLORS.text,
-                    fontSize: "11px",
-                    fontFamily: "'JetBrains Mono', monospace",
-                  }}
+                  style={{ width: "100%", padding: "8px 10px", background: COLORS.surface0, border: `1px solid ${COLORS.border}`, borderRadius: "6px", color: COLORS.textPrimary, fontSize: "12px", fontFamily: "'Outfit', sans-serif" }}
                 >
                   <option value="">Select input...</option>
                   {inputs.map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.name}
-                    </option>
+                    <option key={i.id} value={i.id}>{i.name}</option>
                   ))}
                 </select>
               </div>
-
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "9px",
-                    color: COLORS.textDim,
-                    marginBottom: "3px",
-                    fontWeight: "bold",
-                    letterSpacing: "0.5px",
-                    textTransform: "uppercase",
-                  }}
-                >
+                <label style={{ display: "block", fontSize: "11px", color: COLORS.textSecondary, marginBottom: "4px", fontWeight: 500 }}>
                   MIDI Output
                 </label>
                 <select
                   value={selectedOutput}
                   onChange={(e) => setSelectedOutput(e.target.value)}
                   disabled={connected}
-                  style={{
-                    width: "100%",
-                    padding: "5px 8px",
-                    background: "#1a1a10",
-                    border: "1px solid #555",
-                    borderRadius: "2px",
-                    color: COLORS.text,
-                    fontSize: "11px",
-                    fontFamily: "'JetBrains Mono', monospace",
-                  }}
+                  style={{ width: "100%", padding: "8px 10px", background: COLORS.surface0, border: `1px solid ${COLORS.border}`, borderRadius: "6px", color: COLORS.textPrimary, fontSize: "12px", fontFamily: "'Outfit', sans-serif" }}
                 >
                   <option value="">Select output...</option>
                   {outputs.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {o.name}
-                    </option>
+                    <option key={o.id} value={o.id}>{o.name}</option>
                   ))}
                 </select>
               </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "2px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
                 <button
                   onClick={connected ? () => disconnect() : connect}
                   disabled={!midiSupported || (!connected && (!selectedInput || !selectedOutput))}
                   style={{
                     flex: 1,
-                    padding: "6px 12px",
-                    background: connected
-                      ? `linear-gradient(180deg, #5a3a2a, #3a1a0a)`
-                      : `linear-gradient(180deg, ${COLORS.goldLight}, ${COLORS.goldDark})`,
-                    border: connected
-                      ? `1px solid ${COLORS.bevelLight}`
-                      : `1px solid ${COLORS.goldDark}`,
-                    borderRadius: "3px",
-                    color: connected ? COLORS.text : "#1a0a04",
-                    fontWeight: "bold",
-                    fontSize: "10px",
+                    padding: "8px 16px",
+                    background: connected ? "transparent" : COLORS.accent,
+                    border: connected ? `1px solid ${COLORS.border}` : "none",
+                    borderRadius: "6px",
+                    color: connected ? COLORS.textSecondary : COLORS.textOnAccent,
+                    fontWeight: 600,
+                    fontSize: "12px",
                     cursor: "pointer",
-                    letterSpacing: "0.5px",
-                    textTransform: "uppercase",
-                    fontFamily: "system-ui, sans-serif",
+                    fontFamily: "'Outfit', sans-serif",
+                    transition: "all 150ms ease",
+                    opacity: (!midiSupported || (!connected && (!selectedInput || !selectedOutput))) ? 0.5 : 1,
                   }}
                 >
                   {connected ? "Disconnect" : "Connect"}
                 </button>
                 <LED active={connected} color="green" size={8} />
-                <span
-                  style={{
-                    fontSize: "9px",
-                    color: connected ? COLORS.ledGreen : COLORS.textDim,
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontWeight: "bold",
-                  }}
-                >
+                <span style={{ fontSize: "11px", color: connected ? COLORS.success : COLORS.textMuted, fontFamily: "'JetBrains Mono', monospace", fontWeight: 500 }}>
                   {connected ? "ON" : "OFF"}
                 </span>
               </div>
             </div>
-
             {deviceInfo && (
-              <div
-                style={{
-                  marginTop: "8px",
-                  padding: "4px 8px",
-                  background: "rgba(0,0,0,0.2)",
-                  borderRadius: "2px",
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: "9px",
-                }}
-              >
-                <span style={{ color: "#666" }}>Device: </span>
-                <span style={{ color: COLORS.ledGreen }}>
-                  Pocket POD v{deviceInfo.version}
-                </span>
+              <div style={{ marginTop: "8px", padding: "6px 8px", background: COLORS.surface0, borderRadius: "6px", fontFamily: "'JetBrains Mono', monospace", fontSize: "11px" }}>
+                <span style={{ color: COLORS.textMuted }}>Device: </span>
+                <span style={{ color: COLORS.success }}>Pocket POD v{deviceInfo.version}</span>
               </div>
             )}
           </BevelPanel>
 
-          {/* ---- PRESET LIBRARY ---- */}
-          <BevelPanel style={{ padding: "10px 12px", marginTop: "4px", display: "flex", flexDirection: "column", flex: 1 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+          {/* ============ PRESET LIBRARY (Row 2, Col 1) ============ */}
+          <div style={{ gridColumn: 1, gridRow: 2, position: "sticky", top: 0, alignSelf: "start", maxHeight: "100vh", overflowY: "auto" }}>
+          <BevelPanel variant="sidebar" style={{ padding: "12px", display: "flex", flexDirection: "column", height: "100%" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
               {sectionLabel("Preset Library")}
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 {fetchingPresets && (
-                  <span style={{
-                    fontSize: "10px",
-                    color: COLORS.ledAmber,
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontWeight: "bold",
-                  }}>
+                  <span style={{ fontSize: "11px", color: COLORS.warning, fontFamily: "'JetBrains Mono', monospace", fontWeight: 500 }}>
                     {fetchProgress}/124
                   </span>
                 )}
@@ -1353,20 +1221,17 @@ export default function PocketPodEditor() {
                   onClick={fetchAllPresets}
                   disabled={!connected || fetchingPresets}
                   style={{
-                    padding: "4px 12px",
-                    background: fetchingPresets
-                      ? `linear-gradient(180deg, #3a3a2a, #2a2a1a)`
-                      : `linear-gradient(180deg, ${COLORS.goldLight}, ${COLORS.goldDark})`,
-                    border: `1px solid ${fetchingPresets ? '#555' : COLORS.goldDark}`,
-                    borderRadius: "3px",
-                    color: fetchingPresets ? COLORS.textDim : "#1a0a04",
-                    fontWeight: "bold",
-                    fontSize: "10px",
+                    padding: "6px 14px",
+                    background: fetchingPresets ? COLORS.surface2 : COLORS.accent,
+                    border: fetchingPresets ? `1px solid ${COLORS.border}` : "none",
+                    borderRadius: "6px",
+                    color: fetchingPresets ? COLORS.textMuted : COLORS.textOnAccent,
+                    fontWeight: 600,
+                    fontSize: "11px",
                     cursor: fetchingPresets || !connected ? "default" : "pointer",
-                    letterSpacing: "0.5px",
-                    textTransform: "uppercase",
-                    fontFamily: "system-ui, sans-serif",
+                    fontFamily: "'Outfit', sans-serif",
                     opacity: !connected ? 0.5 : 1,
+                    transition: "all 150ms ease",
                   }}
                 >
                   {fetchingPresets ? "Fetching..." : "Fetch All"}
@@ -1376,33 +1241,14 @@ export default function PocketPodEditor() {
 
             {/* Progress bar */}
             {fetchingPresets && (
-              <div style={{
-                height: "4px",
-                background: "#1a1a10",
-                borderRadius: "2px",
-                marginBottom: "8px",
-                border: "1px solid #333",
-                overflow: "hidden",
-              }}>
-                <div style={{
-                  height: "100%",
-                  width: `${(fetchProgress / 124) * 100}%`,
-                  background: `linear-gradient(90deg, ${COLORS.goldDark}, ${COLORS.gold}, ${COLORS.goldLight})`,
-                  borderRadius: "2px",
-                  transition: "width 80ms linear",
-                }} />
+              <div style={{ height: "4px", background: COLORS.surface0, borderRadius: "2px", marginBottom: "8px", overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${(fetchProgress / 124) * 100}%`, background: COLORS.accent, borderRadius: "2px", transition: "width 80ms linear" }} />
               </div>
             )}
 
             {/* Preset list */}
             {presets.length > 0 && (
-              <div style={{
-                flex: 1,
-                overflowY: "auto",
-                background: "#0a0a0a",
-                borderRadius: "2px",
-                border: "2px inset #222",
-              }}>
+              <div style={{ flex: 1, overflowY: "auto", background: COLORS.surface0, borderRadius: "6px", border: `1px solid ${COLORS.borderSubtle}` }}>
                 {presets.map((preset) => (
                   <button
                     key={preset.number}
@@ -1410,30 +1256,27 @@ export default function PocketPodEditor() {
                     aria-label={`Load preset ${preset.number + 1}: ${preset.name || "unnamed"}`}
                     style={{
                       display: "flex",
-                      gap: "10px",
+                      gap: "12px",
                       width: "100%",
-                      padding: "4px 10px",
-                      background: currentPreset === preset.number ? "#2a2a1a" : "transparent",
+                      padding: "8px 12px",
+                      background: currentPreset === preset.number ? COLORS.accentMuted : "transparent",
                       border: "none",
-                      borderBottom: "1px solid #1a1a1a",
+                      borderBottom: `1px solid ${COLORS.borderSubtle}`,
                       cursor: "pointer",
                       textAlign: "left",
-                      fontFamily: "'JetBrains Mono', monospace",
-                      fontSize: "11px",
-                      color: currentPreset === preset.number ? COLORS.gold : COLORS.text,
+                      fontFamily: "'Outfit', sans-serif",
+                      fontSize: "12px",
+                      color: currentPreset === preset.number ? COLORS.accent : COLORS.textPrimary,
+                      transition: "background 100ms ease",
                     }}
                     onMouseEnter={(e) => {
-                      if (currentPreset !== preset.number) e.currentTarget.style.background = "#1a1a10";
+                      if (currentPreset !== preset.number) e.currentTarget.style.background = COLORS.surface2;
                     }}
                     onMouseLeave={(e) => {
                       if (currentPreset !== preset.number) e.currentTarget.style.background = "transparent";
                     }}
                   >
-                    <span style={{
-                      minWidth: "30px",
-                      color: COLORS.textDim,
-                      fontWeight: "bold",
-                    }}>
+                    <span style={{ minWidth: "32px", color: COLORS.textMuted, fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", fontWeight: 500 }}>
                       {String(preset.number + 1).padStart(3, "0")}
                     </span>
                     <span>{preset.name || `Preset ${preset.number + 1}`}</span>
@@ -1443,278 +1286,86 @@ export default function PocketPodEditor() {
             )}
 
             {presets.length === 0 && !fetchingPresets && (
-              <div style={{
-                color: "#444",
-                fontSize: "11px",
-                fontFamily: "'JetBrains Mono', monospace",
-                textAlign: "center",
-                padding: "12px",
-              }}>
-                {connected
-                  ? "Click \"Fetch All\" to load presets"
-                  : "Connect to fetch presets"}
+              <div style={{ color: COLORS.textMuted, fontSize: "12px", fontFamily: "'Outfit', sans-serif", textAlign: "center", padding: "16px" }}>
+                {connected ? "Click \"Fetch All\" to load presets" : "Connect to fetch presets"}
               </div>
             )}
           </BevelPanel>
-        </div>
+          </div>
 
-        {/* ============ MAIN CONTENT ============ */}
-        <div style={{ flex: 1, maxWidth: "960px", minWidth: 0 }}>
+        {/* ============ HEADER AREA (Row 1, Col 2) ============ */}
+        <div style={{ gridColumn: 2, gridRow: 1, display: "flex", flexDirection: "column" }}>
 
         {/* MIDI Not Supported Warning */}
         {!midiSupported && (
-          <div
-            style={{
-              background: "#3a1010",
-              border: "1px solid #7a2020",
-              padding: "10px 16px",
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              fontSize: "12px",
-            }}
-          >
+          <div style={{ background: COLORS.errorBg, border: `1px solid ${COLORS.error}33`, borderRadius: "0", padding: "10px 16px", display: "flex", alignItems: "center", gap: "10px", fontSize: "13px", margin: "8px 0" }}>
             <LED active color="red" size={8} />
             <div>
-              <strong style={{ color: "#ff6666" }}>Web MIDI API Not Available</strong>
-              <span style={{ color: "#cc9999", marginLeft: "8px" }}>
-                Use Chrome/Edge over HTTPS or localhost. SysEx must be granted.
-              </span>
+              <strong style={{ color: COLORS.error }}>Web MIDI API Not Available</strong>
+              <span style={{ color: COLORS.textSecondary, marginLeft: "8px" }}>Use Chrome/Edge over HTTPS or localhost.</span>
             </div>
           </div>
         )}
 
         {/* Error banners */}
         {errors.map((err) => (
-          <div
-            key={err.id}
-            role="alert"
-            style={{
-              background: "#3a1010",
-              border: "1px solid #7a2020",
-              padding: "8px 16px",
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              fontSize: "12px",
-              marginTop: "2px",
-            }}
-          >
+          <div key={err.id} role="alert" style={{ background: COLORS.errorBg, border: `1px solid ${COLORS.error}33`, borderRadius: "0", padding: "10px 16px", display: "flex", alignItems: "center", gap: "10px", fontSize: "13px", marginTop: "4px" }}>
             <LED active color="red" size={8} />
-            <span style={{ flex: 1, color: "#ff9999" }}>{err.message}</span>
-            <button
-              onClick={() => dismissError(err.id)}
-              aria-label="Dismiss error"
-              style={{
-                background: "none",
-                border: "none",
-                color: "#ff6666",
-                cursor: "pointer",
-                fontSize: "14px",
-                padding: "0 4px",
-              }}
-            >
-              ×
-            </button>
+            <span style={{ flex: 1, color: COLORS.error }}>{err.message}</span>
+            <button onClick={() => dismissError(err.id)} aria-label="Dismiss error" style={{ background: "none", border: "none", color: COLORS.error, cursor: "pointer", fontSize: "16px", padding: "0 4px" }}>×</button>
           </div>
         ))}
 
         {/* Device timeout warning */}
         {deviceTimeout && connected && (
-          <div
-            role="alert"
-            style={{
-              background: "#3a2a10",
-              border: "1px solid #7a6a20",
-              padding: "8px 16px",
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              fontSize: "12px",
-              marginTop: "2px",
-            }}
-          >
+          <div role="alert" style={{ background: COLORS.warningBg, border: `1px solid ${COLORS.warning}33`, borderRadius: "0", padding: "10px 16px", display: "flex", alignItems: "center", gap: "10px", fontSize: "13px", marginTop: "4px" }}>
             <LED active color="amber" size={8} />
-            <span style={{ color: "#ffcc66" }}>
-              No response from device for 10+ seconds. Check connection.
-            </span>
+            <span style={{ color: COLORS.warning }}>No response from device for 10+ seconds. Check connection.</span>
           </div>
         )}
 
         {/* ============ HEADER PANEL ============ */}
-        <BevelPanel screws style={{ marginTop: "4px", padding: "16px 24px" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "20px",
-            }}
-          >
-            {/* Left: Amp Model selector & Cab knob */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px", minWidth: "200px" }}>
-              <div>
-                <div style={{ fontSize: "9px", color: COLORS.textDim, letterSpacing: "1px", marginBottom: "3px", fontWeight: "bold" }}>
-                  AMP MODELS
-                </div>
-                <select
-                  value={params.ampModel}
-                  onChange={(e) => handleParamChange("ampModel", Number(e.target.value))}
-                  style={{ ...selectStyle, width: "180px" }}
-                >
-                  {AMP_MODELS.map((name, i) => (
-                    <option key={i} value={i}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <ChromeKnob
-                value={params.cabModel}
-                min={0}
-                max={15}
-                label="Cabs"
-                onChange={(v) => handleParamChange("cabModel", v)}
-                size="sm"
-                variant="blue"
-              />
+        <BevelPanel style={{ padding: "20px", flex: 1 }}>
+          {/* Display panel */}
+          <div style={{ background: COLORS.displayBg, border: `1px solid ${COLORS.border}`, borderRadius: "0", padding: "12px 20px", textAlign: "center", marginBottom: "16px" }}>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "16px", color: COLORS.displayText, fontWeight: 600, textShadow: `0 0 12px ${COLORS.displayText}33` }}>
+              {presetName}
             </div>
-
-            {/* Center: Display area / branding */}
-            <div
-              style={{
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "8px",
-              }}
-            >
-              {/* Brand line */}
-              <div
-                style={{
-                  fontSize: "11px",
-                  letterSpacing: "4px",
-                  color: COLORS.textDim,
-                  fontWeight: "bold",
-                }}
-              >
-                LINE 6
-              </div>
-
-              {/* Display panel */}
-              <div
-                style={{
-                  background: COLORS.displayBg,
-                  border: "2px inset #0a1a0a",
-                  borderRadius: "3px",
-                  padding: "8px 16px",
-                  minWidth: "280px",
-                  textAlign: "center",
-                }}
-              >
-                <div
-                  style={{
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: "16px",
-                    color: COLORS.displayText,
-                    fontWeight: "bold",
-                    textShadow: `0 0 8px ${COLORS.displayText}44`,
-                  }}
-                >
-                  {presetName}
-                </div>
-                <div
-                  style={{
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: "10px",
-                    color: "#338833",
-                    marginTop: "2px",
-                  }}
-                >
-                  {AMP_MODELS[params.ampModel] || "—"} / {EFFECT_TYPES[params.effect] || "—"} / {CAB_MODELS[params.cabModel]?.split(" ").slice(0, 2).join(" ") || "—"}
-                </div>
-              </div>
-
-              {/* Dropdowns row */}
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center" }}>
-                <select
-                  value={params.ampModel}
-                  onChange={(e) => handleParamChange("ampModel", Number(e.target.value))}
-                  style={selectStyle}
-                >
-                  {AMP_MODELS.map((name, i) => (
-                    <option key={i} value={i}>{name}</option>
-                  ))}
-                </select>
-                <select
-                  value={params.effect}
-                  onChange={(e) => handleParamChange("effect", Number(e.target.value))}
-                  style={selectStyle}
-                >
-                  {EFFECT_TYPES.map((name, i) => (
-                    <option key={i} value={i}>{name}</option>
-                  ))}
-                </select>
-                <select
-                  value={params.cabModel}
-                  onChange={(e) => handleParamChange("cabModel", Number(e.target.value))}
-                  style={selectStyle}
-                >
-                  {CAB_MODELS.map((name, i) => (
-                    <option key={i} value={i}>{name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Branding */}
-              <div
-                style={{
-                  fontSize: "18px",
-                  fontWeight: "bold",
-                  color: COLORS.gold,
-                  letterSpacing: "2px",
-                  fontStyle: "italic",
-                }}
-              >
-                pocket POD
-              </div>
-            </div>
-
-            {/* Right: Effects selector & Air knob */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "center", minWidth: "120px" }}>
-              <div>
-                <div style={{ fontSize: "9px", color: COLORS.textDim, letterSpacing: "1px", marginBottom: "3px", fontWeight: "bold" }}>
-                  EFFECTS
-                </div>
-                <select
-                  value={params.effect}
-                  onChange={(e) => handleParamChange("effect", Number(e.target.value))}
-                  style={{ ...selectStyle, width: "150px" }}
-                >
-                  {EFFECT_TYPES.map((name, i) => (
-                    <option key={i} value={i}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <ChromeKnob
-                value={params.air}
-                min={0}
-                max={127}
-                label="Air"
-                onChange={(v) => handleParamChange("air", v)}
-                size="sm"
-                variant="blue"
-              />
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "11px", color: COLORS.textSecondary, marginTop: "4px" }}>
+              {AMP_MODELS[params.ampModel] || "—"} <span style={{ color: COLORS.textMuted }}>/</span> {EFFECT_TYPES[params.effect] || "—"} <span style={{ color: COLORS.textMuted }}>/</span> {CAB_MODELS[params.cabModel]?.split(" ").slice(0, 2).join(" ") || "—"}
             </div>
           </div>
 
+          {/* Model selectors row */}
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center", alignItems: "flex-end" }}>
+            <div style={{ flex: 1, minWidth: "140px" }}>
+              <div style={{ fontSize: "11px", color: COLORS.textSecondary, marginBottom: "4px", fontWeight: 500 }}>Amp Model</div>
+              <select value={params.ampModel} onChange={(e) => handleParamChange("ampModel", Number(e.target.value))} style={{ ...selectStyle, width: "100%", maxWidth: "none" }}>
+                {AMP_MODELS.map((name, i) => (<option key={i} value={i}>{name}</option>))}
+              </select>
+            </div>
+            <div style={{ flex: 1, minWidth: "140px" }}>
+              <div style={{ fontSize: "11px", color: COLORS.textSecondary, marginBottom: "4px", fontWeight: 500 }}>Effect Type</div>
+              <select value={params.effect} onChange={(e) => handleParamChange("effect", Number(e.target.value))} style={{ ...selectStyle, width: "100%", maxWidth: "none" }}>
+                {EFFECT_TYPES.map((name, i) => (<option key={i} value={i}>{name}</option>))}
+              </select>
+            </div>
+            <div style={{ flex: 1, minWidth: "140px" }}>
+              <div style={{ fontSize: "11px", color: COLORS.textSecondary, marginBottom: "4px", fontWeight: 500 }}>Cabinet</div>
+              <select value={params.cabModel} onChange={(e) => handleParamChange("cabModel", Number(e.target.value))} style={{ ...selectStyle, width: "100%", maxWidth: "none" }}>
+                {CAB_MODELS.map((name, i) => (<option key={i} value={i}>{name}</option>))}
+              </select>
+            </div>
+            <ChromeKnob value={params.air} min={0} max={127} label="Air" onChange={(v) => handleParamChange("air", v)} size="sm" />
+          </div>
         </BevelPanel>
+        </div>
+
+        {/* ============ MAIN CONTENT (Row 2, Col 2) ============ */}
+        <div style={{ gridColumn: 2, gridRow: 2 }}>
 
         {/* ============ MAIN KNOBS ROW ============ */}
-        <BevelPanel style={{ marginTop: "4px", padding: "12px 20px" }}>
+        <BevelPanel style={{ padding: "16px 20px" }}>
           {sectionLabel("Amp Controls")}
           <div
             style={{
@@ -1722,7 +1373,7 @@ export default function PocketPodEditor() {
               justifyContent: "space-around",
               alignItems: "flex-start",
               flexWrap: "wrap",
-              gap: "4px",
+              gap: "12px",
             }}
           >
             <ChromeKnob
@@ -1793,9 +1444,9 @@ export default function PocketPodEditor() {
         </BevelPanel>
 
         {/* ============ NOISE GATE / TOGGLES / REVERB DETAIL ROW ============ */}
-        <div style={{ display: "flex", gap: "4px", marginTop: "4px" }}>
+        <div style={{ display: "flex", gap: "0" }}>
           {/* Noise Gate */}
-          <BevelPanel style={{ flex: "1 1 180px", padding: "10px 12px" }}>
+          <BevelPanel style={{ flex: "1 1 180px", padding: "12px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               {sectionLabel("Noise Gate")}
               <ToggleButton
@@ -1826,7 +1477,7 @@ export default function PocketPodEditor() {
           </BevelPanel>
 
           {/* Toggle switches */}
-          <BevelPanel style={{ flex: "0 0 120px", padding: "10px 12px", display: "flex", flexDirection: "column", gap: "6px", alignItems: "center", justifyContent: "center" }}>
+          <BevelPanel style={{ flex: "0 0 130px", padding: "12px", display: "flex", flexDirection: "column", gap: "6px", alignItems: "center", justifyContent: "center" }}>
             {sectionLabel("Toggles")}
             <ToggleButton
               label="Dist"
@@ -1855,7 +1506,7 @@ export default function PocketPodEditor() {
           </BevelPanel>
 
           {/* Reverb Detail */}
-          <BevelPanel style={{ flex: "2 1 340px", padding: "10px 12px" }}>
+          <BevelPanel style={{ flex: "2 1 340px", padding: "12px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               {sectionLabel("Reverb Detail")}
               <ToggleButton
@@ -1865,7 +1516,7 @@ export default function PocketPodEditor() {
                 color="green"
               />
             </div>
-            <div style={{ display: "flex", gap: "4px", justifyContent: "center", flexWrap: "wrap", alignItems: "flex-start" }}>
+            <div style={{ display: "flex", gap: "8px", justifyContent: "center", flexWrap: "wrap", alignItems: "flex-start" }}>
               <ChromeKnob
                 value={params.reverb_decay}
                 min={0}
@@ -1900,24 +1551,12 @@ export default function PocketPodEditor() {
               />
             </div>
             <div style={{ display: "flex", justifyContent: "center", gap: "10px", marginTop: "6px" }}>
-              <label style={{ fontSize: "10px", color: COLORS.textDim, display: "flex", alignItems: "center", gap: "4px", cursor: "pointer" }}>
-                <input
-                  type="radio"
-                  name="reverbType"
-                  checked={params.reverb_type === 0}
-                  onChange={() => handleParamChange("reverb_type", 0)}
-                  style={{ accentColor: COLORS.gold }}
-                />
+              <label style={{ fontSize: "11px", color: COLORS.textSecondary, display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", fontFamily: "'Outfit', sans-serif" }}>
+                <input type="radio" name="reverbType" checked={params.reverb_type === 0} onChange={() => handleParamChange("reverb_type", 0)} style={{ accentColor: COLORS.accent }} />
                 Room
               </label>
-              <label style={{ fontSize: "10px", color: COLORS.textDim, display: "flex", alignItems: "center", gap: "4px", cursor: "pointer" }}>
-                <input
-                  type="radio"
-                  name="reverbType"
-                  checked={params.reverb_type === 1}
-                  onChange={() => handleParamChange("reverb_type", 1)}
-                  style={{ accentColor: COLORS.gold }}
-                />
+              <label style={{ fontSize: "11px", color: COLORS.textSecondary, display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", fontFamily: "'Outfit', sans-serif" }}>
+                <input type="radio" name="reverbType" checked={params.reverb_type === 1} onChange={() => handleParamChange("reverb_type", 1)} style={{ accentColor: COLORS.accent }} />
                 Spring
               </label>
             </div>
@@ -1925,9 +1564,9 @@ export default function PocketPodEditor() {
         </div>
 
         {/* ============ DELAY / EFFECT ROW ============ */}
-        <div style={{ display: "flex", gap: "4px", marginTop: "4px" }}>
+        <div style={{ display: "flex", gap: "0" }}>
           {/* Delay */}
-          <BevelPanel style={{ flex: "1 1 50%", padding: "10px 12px" }}>
+          <BevelPanel style={{ flex: "1 1 50%", padding: "12px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               {sectionLabel("Delay")}
               <ToggleButton
@@ -1974,7 +1613,7 @@ export default function PocketPodEditor() {
           </BevelPanel>
 
           {/* Effect Params */}
-          <BevelPanel style={{ flex: "1 1 50%", padding: "10px 12px" }}>
+          <BevelPanel style={{ flex: "1 1 50%", padding: "12px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               {sectionLabel("Effect Parameters")}
               <ToggleButton
@@ -2030,141 +1669,35 @@ export default function PocketPodEditor() {
         </div>
 
         {/* ============ TONE NOTES ============ */}
-        <div
-          style={{
-            marginTop: "4px",
-            background: `linear-gradient(180deg, ${COLORS.goldLight}, ${COLORS.gold}, ${COLORS.goldDark})`,
-            border: `2px solid ${COLORS.goldDark}`,
-            borderRadius: "3px",
-            padding: "10px 16px",
-          }}
-        >
-          <div
-            style={{
-              fontSize: "10px",
-              color: "#4a3a10",
-              letterSpacing: "2px",
-              textTransform: "uppercase",
-              fontWeight: "bold",
-              marginBottom: "8px",
-              fontFamily: "system-ui, sans-serif",
-            }}
-          >
-            LINE 6 TONE NOTES
-          </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr 1fr 1fr",
-              gap: "6px",
-            }}
-          >
-            {[
-              ["song", "Song"],
-              ["guitarist", "Guitarist"],
-              ["band", "Band"],
-              ["style", "Style"],
-            ].map(([key, label]) => (
+        <BevelPanel style={{ padding: "16px" }}>
+          {sectionLabel("Tone Notes")}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "8px" }}>
+            {[["song", "Song"], ["guitarist", "Guitarist"], ["band", "Band"], ["style", "Style"]].map(([key, label]) => (
               <div key={key}>
-                <div
-                  style={{
-                    fontSize: "9px",
-                    color: "#5a4a20",
-                    fontWeight: "bold",
-                    marginBottom: "2px",
-                  }}
-                >
-                  {label}
-                </div>
-                <input
-                  type="text"
-                  value={toneNotes[key]}
-                  onChange={(e) =>
-                    setToneNotes((prev) => ({ ...prev, [key]: e.target.value }))
-                  }
-                  style={{
-                    width: "100%",
-                    padding: "3px 6px",
-                    background: "#fff8e0",
-                    border: "1px solid #a08830",
-                    borderRadius: "2px",
-                    fontSize: "11px",
-                    color: "#333",
-                    fontFamily: "system-ui, sans-serif",
-                  }}
-                />
+                <div style={{ fontSize: "11px", color: COLORS.textSecondary, fontWeight: 500, marginBottom: "4px" }}>{label}</div>
+                <input type="text" value={toneNotes[key]} onChange={(e) => setToneNotes((prev) => ({ ...prev, [key]: e.target.value }))}
+                  style={{ width: "100%", padding: "8px 10px", background: COLORS.surface0, border: `1px solid ${COLORS.border}`, borderRadius: "6px", fontSize: "12px", color: COLORS.textPrimary, fontFamily: "'Outfit', sans-serif" }} />
               </div>
             ))}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px", marginTop: "6px" }}>
-            {[
-              ["author", "Author"],
-              ["pickup", "Pickup"],
-            ].map(([key, label]) => (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", marginTop: "8px" }}>
+            {[["author", "Author"], ["pickup", "Pickup"]].map(([key, label]) => (
               <div key={key}>
-                <div
-                  style={{
-                    fontSize: "9px",
-                    color: "#5a4a20",
-                    fontWeight: "bold",
-                    marginBottom: "2px",
-                  }}
-                >
-                  {label}
-                </div>
-                <input
-                  type="text"
-                  value={toneNotes[key]}
-                  onChange={(e) =>
-                    setToneNotes((prev) => ({ ...prev, [key]: e.target.value }))
-                  }
-                  style={{
-                    width: "100%",
-                    padding: "3px 6px",
-                    background: "#fff8e0",
-                    border: "1px solid #a08830",
-                    borderRadius: "2px",
-                    fontSize: "11px",
-                    color: "#333",
-                    fontFamily: "system-ui, sans-serif",
-                  }}
-                />
+                <div style={{ fontSize: "11px", color: COLORS.textSecondary, fontWeight: 500, marginBottom: "4px" }}>{label}</div>
+                <input type="text" value={toneNotes[key]} onChange={(e) => setToneNotes((prev) => ({ ...prev, [key]: e.target.value }))}
+                  style={{ width: "100%", padding: "8px 10px", background: COLORS.surface0, border: `1px solid ${COLORS.border}`, borderRadius: "6px", fontSize: "12px", color: COLORS.textPrimary, fontFamily: "'Outfit', sans-serif" }} />
               </div>
             ))}
             <div>
-              <div
-                style={{
-                  fontSize: "9px",
-                  color: "#5a4a20",
-                  fontWeight: "bold",
-                  marginBottom: "2px",
-                }}
-              >
-                Notes
-              </div>
-              <input
-                type="text"
-                value={toneNotes.notes}
-                onChange={(e) =>
-                  setToneNotes((prev) => ({ ...prev, notes: e.target.value }))
-                }
-                style={{
-                  width: "100%",
-                  padding: "3px 6px",
-                  background: "#fff8e0",
-                  border: "1px solid #a08830",
-                  borderRadius: "2px",
-                  fontSize: "11px",
-                  color: "#333",
-                  fontFamily: "system-ui, sans-serif",
-                }}
-              />
+              <div style={{ fontSize: "11px", color: COLORS.textSecondary, fontWeight: 500, marginBottom: "4px" }}>Notes</div>
+              <input type="text" value={toneNotes.notes} onChange={(e) => setToneNotes((prev) => ({ ...prev, notes: e.target.value }))}
+                style={{ width: "100%", padding: "8px 10px", background: COLORS.surface0, border: `1px solid ${COLORS.border}`, borderRadius: "6px", fontSize: "12px", color: COLORS.textPrimary, fontFamily: "'Outfit', sans-serif" }} />
             </div>
           </div>
-        </div>
+        </BevelPanel>
 
         {/* ============ WAH PEDAL ============ */}
-        <BevelPanel style={{ marginTop: "4px", padding: "10px 16px" }}>
+        <BevelPanel style={{ padding: "12px 16px" }}>
           {sectionLabel("Wah Pedal")}
           <div style={{ display: "flex", gap: "16px", justifyContent: "center" }}>
             <ChromeKnob
@@ -2174,7 +1707,7 @@ export default function PocketPodEditor() {
               label="Position"
               onChange={(v) => handleParamChange("wah_position", v)}
               size="md"
-              variant="blue"
+
             />
             <ChromeKnob
               value={params.wah_bottom}
@@ -2183,7 +1716,7 @@ export default function PocketPodEditor() {
               label="Bot Freq."
               onChange={(v) => handleParamChange("wah_bottom", v)}
               size="md"
-              variant="blue"
+
             />
             <ChromeKnob
               value={params.wah_top}
@@ -2192,13 +1725,13 @@ export default function PocketPodEditor() {
               label="Top Freq."
               onChange={(v) => handleParamChange("wah_top", v)}
               size="md"
-              variant="blue"
+
             />
           </div>
         </BevelPanel>
 
         {/* ============ VOLUME PEDAL ============ */}
-        <BevelPanel style={{ marginTop: "4px", padding: "10px 16px" }}>
+        <BevelPanel style={{ padding: "12px 16px" }}>
           {sectionLabel("Volume Pedal")}
           <div style={{ display: "flex", gap: "16px", justifyContent: "center" }}>
             <ChromeKnob
@@ -2208,7 +1741,7 @@ export default function PocketPodEditor() {
               label="Position"
               onChange={(v) => handleParamChange("vol_position", v)}
               size="md"
-              variant="blue"
+
             />
             <ChromeKnob
               value={params.vol_level}
@@ -2217,7 +1750,7 @@ export default function PocketPodEditor() {
               label="Level"
               onChange={(v) => handleParamChange("vol_level", v)}
               size="md"
-              variant="blue"
+
             />
             <ChromeKnob
               value={params.vol_min}
@@ -2226,62 +1759,29 @@ export default function PocketPodEditor() {
               label="Min Vol"
               onChange={(v) => handleParamChange("vol_min", v)}
               size="md"
-              variant="blue"
+
             />
           </div>
         </BevelPanel>
 
         {/* ============ MIDI MONITOR ============ */}
-        <BevelPanel style={{ marginTop: "4px", padding: "10px 12px" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "8px",
-            }}
-          >
+        <BevelPanel style={{ padding: "12px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
             {sectionLabel("MIDI Monitor")}
             <button
               onClick={() => setLog([])}
-              style={{
-                padding: "2px 10px",
-                background: `linear-gradient(180deg, ${COLORS.panelHighlight}, ${COLORS.panelMid})`,
-                border: `1px outset ${COLORS.bevelLight}`,
-                borderRadius: "2px",
-                color: COLORS.textDim,
-                fontSize: "10px",
-                cursor: "pointer",
-                fontFamily: "system-ui, sans-serif",
-              }}
+              style={{ padding: "6px 14px", background: "transparent", border: `1px solid ${COLORS.border}`, borderRadius: "6px", color: COLORS.textSecondary, fontSize: "12px", fontWeight: 500, cursor: "pointer", fontFamily: "'Outfit', sans-serif", transition: "all 150ms ease" }}
             >
               Clear
             </button>
           </div>
           <div
             ref={logContainerRef}
-            style={{
-              maxHeight: "200px",
-              overflowY: "auto",
-              background: "#0a0a0a",
-              borderRadius: "2px",
-              padding: "6px 8px",
-              border: "2px inset #222",
-            }}
+            style={{ maxHeight: "220px", overflowY: "auto", background: COLORS.surface0, borderRadius: "6px", padding: "8px", border: `1px solid ${COLORS.borderSubtle}` }}
           >
             {log.length === 0 && (
-              <div
-                style={{
-                  color: "#444",
-                  fontSize: "11px",
-                  fontFamily: "'JetBrains Mono', monospace",
-                  textAlign: "center",
-                  padding: "16px",
-                }}
-              >
-                {connected
-                  ? "Waiting for MIDI data..."
-                  : "Connect to your Pocket POD to see MIDI traffic"}
+              <div style={{ color: COLORS.textMuted, fontSize: "12px", fontFamily: "'Outfit', sans-serif", textAlign: "center", padding: "16px" }}>
+                {connected ? "Waiting for MIDI data..." : "Connect to your Pocket POD to see MIDI traffic"}
               </div>
             )}
             {log.map((entry) => (
@@ -2291,19 +1791,11 @@ export default function PocketPodEditor() {
         </BevelPanel>
 
         {/* Footer */}
-        <div
-          style={{
-            textAlign: "center",
-            fontSize: "9px",
-            color: "#4a3a2a",
-            padding: "8px",
-            fontFamily: "'JetBrains Mono', monospace",
-          }}
-        >
+        <div style={{ textAlign: "center", fontSize: "11px", color: COLORS.textMuted, padding: "16px", fontFamily: "'Outfit', sans-serif", borderTop: `1px solid ${COLORS.borderSubtle}` }}>
           Pocket POD Web MIDI Editor &bull; Drag knobs vertically to adjust &bull; Requires Chrome with SysEx permission
         </div>
-        </div>{/* end main content */}
-      </div>{/* end flex container */}
+        </div>{/* end main content (row 2, col 2) */}
+      </div>{/* end grid container */}
     </div>
   );
 }
