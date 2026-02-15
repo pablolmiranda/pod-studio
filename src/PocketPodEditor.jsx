@@ -189,10 +189,6 @@ const COLORS = {
   textBright: "#fff0dd",
   displayBg: "#1a2a1a",
   displayText: "#44dd44",
-  menuBg: "#e8e0d8",
-  menuText: "#222",
-  menuBorder: "#aaa",
-  menuHover: "#c0b8a0",
   bodyBg: "#1a0a04",
 };
 
@@ -749,241 +745,6 @@ function LogEntry({ entry }) {
   );
 }
 
-// --- Menu Bar ---
-function MenuBar({
-  connected,
-  midiAccess,
-  inputs,
-  outputs,
-  selectedInput,
-  selectedOutput,
-  onSelectInput,
-  onSelectOutput,
-  onConnect,
-  onDisconnect,
-  onRequestEditBuffer,
-  onRequestIdentity,
-  onFetchAllPresets,
-  fetchingPresets,
-  onMidiLogToggle,
-  midiLogVisible,
-  midiSupported,
-  onNewPreset,
-  onOpenPreset,
-  onSavePreset,
-  onSavePresetAs,
-}) {
-  const [openMenu, setOpenMenu] = useState(null);
-  const menuRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setOpenMenu(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const menuItemStyle = {
-    display: "block",
-    width: "100%",
-    padding: "4px 20px",
-    background: "none",
-    border: "none",
-    textAlign: "left",
-    fontSize: "12px",
-    color: COLORS.menuText,
-    cursor: "pointer",
-    fontFamily: "system-ui, sans-serif",
-    whiteSpace: "nowrap",
-  };
-
-  const menuItemHoverStyle = {
-    ...menuItemStyle,
-    background: COLORS.menuHover,
-  };
-
-  const separator = (
-    <div style={{ borderTop: "1px solid #ccc", margin: "2px 4px" }} />
-  );
-
-  const MenuButton = ({ label, menuId, children }) => (
-    <div style={{ position: "relative" }}>
-      <button
-        onMouseDown={() => setOpenMenu(openMenu === menuId ? null : menuId)}
-        onMouseEnter={() => openMenu && setOpenMenu(menuId)}
-        style={{
-          padding: "2px 10px",
-          background: openMenu === menuId ? "#c0b8a0" : "transparent",
-          border: "none",
-          fontSize: "12px",
-          color: COLORS.menuText,
-          cursor: "pointer",
-          fontFamily: "system-ui, sans-serif",
-        }}
-      >
-        {label}
-      </button>
-      {openMenu === menuId && (
-        <div
-          style={{
-            position: "absolute",
-            top: "100%",
-            left: 0,
-            background: COLORS.menuBg,
-            border: `1px solid ${COLORS.menuBorder}`,
-            boxShadow: "2px 2px 6px rgba(0,0,0,0.3)",
-            zIndex: 1000,
-            minWidth: "200px",
-            padding: "2px 0",
-          }}
-        >
-          {children}
-        </div>
-      )}
-    </div>
-  );
-
-  const MenuItem = ({ label, onClick, disabled = false, checked }) => {
-    const [hovered, setHovered] = useState(false);
-    return (
-      <button
-        onClick={() => {
-          if (!disabled) {
-            onClick?.();
-            setOpenMenu(null);
-          }
-        }}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        disabled={disabled}
-        style={{
-          ...menuItemStyle,
-          background: hovered && !disabled ? COLORS.menuHover : "transparent",
-          color: disabled ? "#999" : COLORS.menuText,
-          cursor: disabled ? "default" : "pointer",
-        }}
-      >
-        {checked !== undefined && (
-          <span style={{ display: "inline-block", width: "18px" }}>
-            {checked ? "\u2713" : ""}
-          </span>
-        )}
-        {label}
-      </button>
-    );
-  };
-
-  return (
-    <div
-      ref={menuRef}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        background: `linear-gradient(180deg, ${COLORS.menuBg}, #d8d0c8)`,
-        borderBottom: `1px solid ${COLORS.menuBorder}`,
-        padding: "1px 0",
-        fontFamily: "system-ui, sans-serif",
-      }}
-    >
-      <MenuButton label="File" menuId="file">
-        <MenuItem label="New Preset" onClick={onNewPreset} />
-        <MenuItem label="Open Preset..." onClick={onOpenPreset} />
-        {separator}
-        <MenuItem label="Save Preset" onClick={onSavePreset} />
-        <MenuItem label="Save Preset As..." onClick={onSavePresetAs} />
-      </MenuButton>
-
-      <MenuButton label="MIDI" menuId="midi">
-        <div style={{ padding: "4px 20px", fontSize: "11px", color: "#666" }}>
-          MIDI Input
-        </div>
-        {inputs.map((inp) => (
-          <MenuItem
-            key={inp.id}
-            label={inp.name}
-            checked={selectedInput === inp.id}
-            onClick={() => onSelectInput(inp.id)}
-            disabled={connected}
-          />
-        ))}
-        {inputs.length === 0 && (
-          <div style={{ padding: "4px 20px", fontSize: "11px", color: "#999", fontStyle: "italic" }}>
-            No inputs found
-          </div>
-        )}
-        {separator}
-        <div style={{ padding: "4px 20px", fontSize: "11px", color: "#666" }}>
-          MIDI Output
-        </div>
-        {outputs.map((out) => (
-          <MenuItem
-            key={out.id}
-            label={out.name}
-            checked={selectedOutput === out.id}
-            onClick={() => onSelectOutput(out.id)}
-            disabled={connected}
-          />
-        ))}
-        {outputs.length === 0 && (
-          <div style={{ padding: "4px 20px", fontSize: "11px", color: "#999", fontStyle: "italic" }}>
-            No outputs found
-          </div>
-        )}
-        {separator}
-        {connected ? (
-          <MenuItem label="Disconnect" onClick={onDisconnect} />
-        ) : (
-          <MenuItem
-            label="Connect"
-            onClick={onConnect}
-            disabled={!selectedInput || !selectedOutput || !midiSupported}
-          />
-        )}
-        {separator}
-        <MenuItem label="Request Identity" onClick={onRequestIdentity} disabled={!connected} />
-        <MenuItem label="Request Edit Buffer" onClick={onRequestEditBuffer} disabled={!connected} />
-        {separator}
-        <MenuItem label="Fetch All Presets" onClick={onFetchAllPresets} disabled={!connected || fetchingPresets} />
-      </MenuButton>
-
-      <MenuButton label="View" menuId="view">
-        <MenuItem
-          label="MIDI Monitor"
-          checked={midiLogVisible}
-          onClick={onMidiLogToggle}
-        />
-      </MenuButton>
-
-      <MenuButton label="Help" menuId="help">
-        <MenuItem label="About Pocket POD Editor" />
-      </MenuButton>
-
-      {/* Spacer */}
-      <div style={{ flex: 1 }} />
-
-      {/* Connection status in menu bar */}
-      <div
-        role="status"
-        aria-live="polite"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          padding: "0 12px",
-          fontSize: "11px",
-          color: connected ? "#2a6a2a" : "#888",
-          fontFamily: "system-ui, sans-serif",
-        }}
-      >
-        <LED active={connected} color="green" size={6} label="Connection status" />
-        {connected ? "Connected" : "Disconnected"}
-      </div>
-    </div>
-  );
-}
 
 const DEFAULT_PARAMS = {
   ampModel: 0, drive: 64, drive2: 0, bass: 64, mid: 64, treble: 64,
@@ -1012,7 +773,6 @@ export default function PocketPodEditor() {
   const [selectedOutput, setSelectedOutput] = useState("");
   const [connected, setConnected] = useState(false);
   const [log, setLog] = useState([]);
-  const [midiLogVisible, setMidiLogVisible] = useState(true);
   const [params, setParams] = useState({ ...DEFAULT_PARAMS });
   const [presetName, setPresetName] = useState("\u2014");
   const [deviceInfo, setDeviceInfo] = useState(null);
@@ -1029,7 +789,6 @@ export default function PocketPodEditor() {
   const inputRef = useRef(null);
   const outputRef = useRef(null);
   const logContainerRef = useRef(null);
-  const fileInputRef = useRef(null);
 
   const addError = useCallback((message) => {
     const id = Date.now() + Math.random();
@@ -1335,64 +1094,6 @@ export default function PocketPodEditor() {
     setDirty(false);
   };
 
-  // --- File operations ---
-  const newPreset = () => {
-    if (dirty && !window.confirm("Discard unsaved changes and create a new preset?")) return;
-    setParams({ ...DEFAULT_PARAMS });
-    setPresetName("New Preset");
-    setToneNotes({ ...DEFAULT_TONE_NOTES });
-    setDirty(false);
-  };
-
-  const openPreset = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileOpen = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const data = JSON.parse(ev.target.result);
-        if (!data.params || typeof data.params !== "object") {
-          addError("Invalid preset file: missing params object.");
-          return;
-        }
-        setParams((prev) => ({ ...prev, ...data.params }));
-        setPresetName(data.name || file.name.replace(/\.json$/, ""));
-        if (data.toneNotes) setToneNotes((prev) => ({ ...prev, ...data.toneNotes }));
-        setDirty(false);
-      } catch {
-        addError("Failed to parse preset file. Expected valid JSON.");
-      }
-    };
-    reader.readAsText(file);
-    // Reset input so same file can be re-opened
-    e.target.value = "";
-  };
-
-  const savePreset = (saveAs = false) => {
-    const name = saveAs
-      ? window.prompt("Preset name:", presetName === "\u2014" ? "My Preset" : presetName)
-      : (presetName === "\u2014" ? "My Preset" : presetName);
-    if (!name) return;
-    const data = {
-      version: 1,
-      name,
-      params: { ...params },
-      toneNotes: { ...toneNotes },
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${name.replace(/[^a-zA-Z0-9_-]/g, "_")}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    setPresetName(name);
-    setDirty(false);
-  };
 
   // --- Select style used in dropdowns ---
   const selectStyle = {
@@ -1442,39 +1143,6 @@ export default function PocketPodEditor() {
       `}</style>
 
       <div style={{ width: "960px", margin: "0 auto" }}>
-        {/* Hidden file input for Open Preset */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json"
-          style={{ display: "none" }}
-          onChange={handleFileOpen}
-        />
-
-        {/* Menu Bar */}
-        <MenuBar
-          connected={connected}
-          midiAccess={midiAccess}
-          inputs={inputs}
-          outputs={outputs}
-          selectedInput={selectedInput}
-          selectedOutput={selectedOutput}
-          onSelectInput={setSelectedInput}
-          onSelectOutput={setSelectedOutput}
-          onConnect={connect}
-          onDisconnect={() => disconnect()}
-          onRequestEditBuffer={requestEditBuffer}
-          onRequestIdentity={() => sendSysEx(IDENTITY_REQUEST)}
-          onFetchAllPresets={fetchAllPresets}
-          fetchingPresets={fetchingPresets}
-          onMidiLogToggle={() => setMidiLogVisible((v) => !v)}
-          midiLogVisible={midiLogVisible}
-          midiSupported={midiSupported}
-          onNewPreset={newPreset}
-          onOpenPreset={openPreset}
-          onSavePreset={() => savePreset(false)}
-          onSavePresetAs={() => savePreset(true)}
-        />
 
         {/* MIDI Not Supported Warning */}
         {!midiSupported && (
