@@ -1759,6 +1759,114 @@ export default function PocketPodEditor() {
           );
         })()}
 
+        {/* ============ WAH / VOLUME PEDAL ROW ============ */}
+        <div style={{ display: "flex", gap: "0" }}>
+          <BevelPanel style={{ flex: "1 1 50%", padding: "12px" }}>
+            {sectionLabel("Wah Pedal")}
+            <div style={{ display: "flex", gap: "6px", justifyContent: "center", flexWrap: "wrap" }}>
+              <ChromeKnob
+                value={params.wah_position}
+                min={0}
+                max={127}
+                label="Position"
+                onChange={(v) => handleParamChange("wah_position", v)}
+                size="md"
+              />
+              <ChromeKnob
+                value={params.wah_bottom}
+                min={0}
+                max={127}
+                label="Bot Freq."
+                onChange={(v) => handleParamChange("wah_bottom", v)}
+                size="md"
+              />
+              <ChromeKnob
+                value={params.wah_top}
+                min={0}
+                max={127}
+                label="Top Freq."
+                onChange={(v) => handleParamChange("wah_top", v)}
+                size="md"
+              />
+            </div>
+          </BevelPanel>
+
+          <BevelPanel style={{ flex: "1 1 50%", padding: "12px" }}>
+            {sectionLabel("Volume Pedal")}
+            <div style={{ display: "flex", gap: "16px", justifyContent: "center", alignItems: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: 500,
+                    color: params.vol_position < 64 ? COLORS.accent : COLORS.textMuted,
+                    fontFamily: "'Outfit', sans-serif",
+                    transition: "color 150ms ease",
+                  }}
+                >
+                  Pre-Amp
+                </span>
+                <button
+                  onClick={() => handleParamChange("vol_position", params.vol_position < 64 ? 127 : 0)}
+                  role="switch"
+                  aria-checked={params.vol_position >= 64}
+                  aria-label={`Volume position ${params.vol_position < 64 ? "pre-amp" : "post-amp"}`}
+                  style={{
+                    width: "32px",
+                    height: "16px",
+                    borderRadius: "8px",
+                    border: "none",
+                    background: params.vol_position >= 64 ? COLORS.accent : COLORS.surface3,
+                    position: "relative",
+                    cursor: "pointer",
+                    transition: "background 150ms ease",
+                    padding: 0,
+                    flexShrink: 0,
+                  }}
+                >
+                  <span style={{
+                    position: "absolute",
+                    top: "2px",
+                    left: params.vol_position >= 64 ? "16px" : "2px",
+                    width: "12px",
+                    height: "12px",
+                    borderRadius: "50%",
+                    background: params.vol_position >= 64 ? COLORS.textOnAccent : COLORS.textMuted,
+                    transition: "left 150ms ease",
+                  }} />
+                </button>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: 500,
+                    color: params.vol_position >= 64 ? COLORS.accent : COLORS.textMuted,
+                    fontFamily: "'Outfit', sans-serif",
+                    transition: "color 150ms ease",
+                  }}
+                >
+                  Post-Amp
+                </span>
+              </div>
+              <ChromeKnob
+                value={params.vol_level}
+                min={0}
+                max={127}
+                label="Level"
+                onChange={(v) => handleParamChange("vol_level", v)}
+                size="md"
+              />
+              <ChromeKnob
+                value={params.vol_min}
+                min={0}
+                max={127}
+                label="Min Vol"
+                onChange={(v) => handleParamChange("vol_min", v)}
+                size="md"
+              />
+            </div>
+          </BevelPanel>
+        </div>
+
         {/* ============ TONE NOTES ============ */}
         <BevelPanel style={{ padding: "16px" }}>
           {sectionLabel("Tone Notes")}
@@ -1784,118 +1892,6 @@ export default function PocketPodEditor() {
               <input type="text" value={toneNotes.notes} onChange={(e) => setToneNotes((prev) => ({ ...prev, notes: e.target.value }))}
                 style={{ width: "100%", padding: "8px 10px", background: COLORS.surface0, border: `1px solid ${COLORS.border}`, borderRadius: "6px", fontSize: "12px", color: COLORS.textPrimary, fontFamily: "'Outfit', sans-serif" }} />
             </div>
-          </div>
-        </BevelPanel>
-
-        {/* ============ WAH PEDAL ============ */}
-        <BevelPanel style={{ padding: "12px 16px" }}>
-          {sectionLabel("Wah Pedal")}
-          <div style={{ display: "flex", gap: "16px", justifyContent: "center" }}>
-            <ChromeKnob
-              value={params.wah_position}
-              min={0}
-              max={127}
-              label="Position"
-              onChange={(v) => handleParamChange("wah_position", v)}
-              size="md"
-
-            />
-            <ChromeKnob
-              value={params.wah_bottom}
-              min={0}
-              max={127}
-              label="Bot Freq."
-              onChange={(v) => handleParamChange("wah_bottom", v)}
-              size="md"
-
-            />
-            <ChromeKnob
-              value={params.wah_top}
-              min={0}
-              max={127}
-              label="Top Freq."
-              onChange={(v) => handleParamChange("wah_top", v)}
-              size="md"
-
-            />
-          </div>
-        </BevelPanel>
-
-        {/* ============ VOLUME PEDAL ============ */}
-        <BevelPanel style={{ padding: "12px 16px" }}>
-          {sectionLabel("Volume Pedal")}
-          <div style={{ display: "flex", gap: "16px", justifyContent: "center", alignItems: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <span
-                style={{
-                  fontSize: "11px",
-                  fontWeight: 500,
-                  color: params.vol_position < 64 ? COLORS.accent : COLORS.textMuted,
-                  fontFamily: "'Outfit', sans-serif",
-                  transition: "color 150ms ease",
-                }}
-              >
-                Pre-Amp
-              </span>
-              <button
-                onClick={() => handleParamChange("vol_position", params.vol_position < 64 ? 127 : 0)}
-                role="switch"
-                aria-checked={params.vol_position >= 64}
-                aria-label={`Volume position ${params.vol_position < 64 ? "pre-amp" : "post-amp"}`}
-                style={{
-                  width: "32px",
-                  height: "16px",
-                  borderRadius: "8px",
-                  border: "none",
-                  background: params.vol_position >= 64 ? COLORS.accent : COLORS.surface3,
-                  position: "relative",
-                  cursor: "pointer",
-                  transition: "background 150ms ease",
-                  padding: 0,
-                  flexShrink: 0,
-                }}
-              >
-                <span style={{
-                  position: "absolute",
-                  top: "2px",
-                  left: params.vol_position >= 64 ? "16px" : "2px",
-                  width: "12px",
-                  height: "12px",
-                  borderRadius: "50%",
-                  background: params.vol_position >= 64 ? COLORS.textOnAccent : COLORS.textMuted,
-                  transition: "left 150ms ease",
-                }} />
-              </button>
-              <span
-                style={{
-                  fontSize: "11px",
-                  fontWeight: 500,
-                  color: params.vol_position >= 64 ? COLORS.accent : COLORS.textMuted,
-                  fontFamily: "'Outfit', sans-serif",
-                  transition: "color 150ms ease",
-                }}
-              >
-                Post-Amp
-              </span>
-            </div>
-            <ChromeKnob
-              value={params.vol_level}
-              min={0}
-              max={127}
-              label="Level"
-              onChange={(v) => handleParamChange("vol_level", v)}
-              size="md"
-
-            />
-            <ChromeKnob
-              value={params.vol_min}
-              min={0}
-              max={127}
-              label="Min Vol"
-              onChange={(v) => handleParamChange("vol_min", v)}
-              size="md"
-
-            />
           </div>
         </BevelPanel>
 
