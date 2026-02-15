@@ -1152,7 +1152,314 @@ export default function PocketPodEditor() {
         select, button { font-family: system-ui, sans-serif; }
       `}</style>
 
-      <div style={{ width: "960px", margin: "0 auto" }}>
+      {/* ---- TOP BAR ---- */}
+      <div style={{
+        padding: "12px 16px",
+        textAlign: "center",
+        borderBottom: `1px solid ${COLORS.bevelDark}`,
+      }}>
+        <div style={{
+          fontSize: "20px",
+          fontWeight: "bold",
+          letterSpacing: "2px",
+          textTransform: "uppercase",
+          fontFamily: "'JetBrains Mono', monospace",
+          background: `linear-gradient(180deg, ${COLORS.goldLight}, ${COLORS.gold}, ${COLORS.goldDark})`,
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          lineHeight: 1.2,
+        }}>
+          Pod Studio
+        </div>
+        <div style={{
+          fontSize: "8px",
+          color: COLORS.textDim,
+          letterSpacing: "3px",
+          textTransform: "uppercase",
+          marginTop: "2px",
+        }}>
+          Pod Products Editor
+        </div>
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "center", gap: "4px", flex: 1 }}>
+
+        {/* ============ SIDEBAR ============ */}
+        <div style={{
+          width: "240px",
+          flexShrink: 0,
+          height: "calc(100vh - 58px)",
+          position: "sticky",
+          top: 0,
+          display: "flex",
+          flexDirection: "column",
+          overflowY: "auto",
+        }}>
+
+          {/* ---- MIDI CONNECTION ---- */}
+          <BevelPanel style={{ padding: "10px 12px" }}>
+            {sectionLabel("MIDI Connection")}
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "9px",
+                    color: COLORS.textDim,
+                    marginBottom: "3px",
+                    fontWeight: "bold",
+                    letterSpacing: "0.5px",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  MIDI Input
+                </label>
+                <select
+                  value={selectedInput}
+                  onChange={(e) => setSelectedInput(e.target.value)}
+                  disabled={connected}
+                  style={{
+                    width: "100%",
+                    padding: "5px 8px",
+                    background: "#1a1a10",
+                    border: "1px solid #555",
+                    borderRadius: "2px",
+                    color: COLORS.text,
+                    fontSize: "11px",
+                    fontFamily: "'JetBrains Mono', monospace",
+                  }}
+                >
+                  <option value="">Select input...</option>
+                  {inputs.map((i) => (
+                    <option key={i.id} value={i.id}>
+                      {i.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "9px",
+                    color: COLORS.textDim,
+                    marginBottom: "3px",
+                    fontWeight: "bold",
+                    letterSpacing: "0.5px",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  MIDI Output
+                </label>
+                <select
+                  value={selectedOutput}
+                  onChange={(e) => setSelectedOutput(e.target.value)}
+                  disabled={connected}
+                  style={{
+                    width: "100%",
+                    padding: "5px 8px",
+                    background: "#1a1a10",
+                    border: "1px solid #555",
+                    borderRadius: "2px",
+                    color: COLORS.text,
+                    fontSize: "11px",
+                    fontFamily: "'JetBrains Mono', monospace",
+                  }}
+                >
+                  <option value="">Select output...</option>
+                  {outputs.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "2px" }}>
+                <button
+                  onClick={connected ? () => disconnect() : connect}
+                  disabled={!midiSupported || (!connected && (!selectedInput || !selectedOutput))}
+                  style={{
+                    flex: 1,
+                    padding: "6px 12px",
+                    background: connected
+                      ? `linear-gradient(180deg, #5a3a2a, #3a1a0a)`
+                      : `linear-gradient(180deg, ${COLORS.goldLight}, ${COLORS.goldDark})`,
+                    border: connected
+                      ? `1px solid ${COLORS.bevelLight}`
+                      : `1px solid ${COLORS.goldDark}`,
+                    borderRadius: "3px",
+                    color: connected ? COLORS.text : "#1a0a04",
+                    fontWeight: "bold",
+                    fontSize: "10px",
+                    cursor: "pointer",
+                    letterSpacing: "0.5px",
+                    textTransform: "uppercase",
+                    fontFamily: "system-ui, sans-serif",
+                  }}
+                >
+                  {connected ? "Disconnect" : "Connect"}
+                </button>
+                <LED active={connected} color="green" size={8} />
+                <span
+                  style={{
+                    fontSize: "9px",
+                    color: connected ? COLORS.ledGreen : COLORS.textDim,
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontWeight: "bold",
+                  }}
+                >
+                  {connected ? "ON" : "OFF"}
+                </span>
+              </div>
+            </div>
+
+            {deviceInfo && (
+              <div
+                style={{
+                  marginTop: "8px",
+                  padding: "4px 8px",
+                  background: "rgba(0,0,0,0.2)",
+                  borderRadius: "2px",
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: "9px",
+                }}
+              >
+                <span style={{ color: "#666" }}>Device: </span>
+                <span style={{ color: COLORS.ledGreen }}>
+                  Pocket POD v{deviceInfo.version}
+                </span>
+              </div>
+            )}
+          </BevelPanel>
+
+          {/* ---- PRESET LIBRARY ---- */}
+          <BevelPanel style={{ padding: "10px 12px", marginTop: "4px", display: "flex", flexDirection: "column", flex: 1 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+              {sectionLabel("Preset Library")}
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                {fetchingPresets && (
+                  <span style={{
+                    fontSize: "10px",
+                    color: COLORS.ledAmber,
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontWeight: "bold",
+                  }}>
+                    {fetchProgress}/124
+                  </span>
+                )}
+                <button
+                  onClick={fetchAllPresets}
+                  disabled={!connected || fetchingPresets}
+                  style={{
+                    padding: "4px 12px",
+                    background: fetchingPresets
+                      ? `linear-gradient(180deg, #3a3a2a, #2a2a1a)`
+                      : `linear-gradient(180deg, ${COLORS.goldLight}, ${COLORS.goldDark})`,
+                    border: `1px solid ${fetchingPresets ? '#555' : COLORS.goldDark}`,
+                    borderRadius: "3px",
+                    color: fetchingPresets ? COLORS.textDim : "#1a0a04",
+                    fontWeight: "bold",
+                    fontSize: "10px",
+                    cursor: fetchingPresets || !connected ? "default" : "pointer",
+                    letterSpacing: "0.5px",
+                    textTransform: "uppercase",
+                    fontFamily: "system-ui, sans-serif",
+                    opacity: !connected ? 0.5 : 1,
+                  }}
+                >
+                  {fetchingPresets ? "Fetching..." : "Fetch All"}
+                </button>
+              </div>
+            </div>
+
+            {/* Progress bar */}
+            {fetchingPresets && (
+              <div style={{
+                height: "4px",
+                background: "#1a1a10",
+                borderRadius: "2px",
+                marginBottom: "8px",
+                border: "1px solid #333",
+                overflow: "hidden",
+              }}>
+                <div style={{
+                  height: "100%",
+                  width: `${(fetchProgress / 124) * 100}%`,
+                  background: `linear-gradient(90deg, ${COLORS.goldDark}, ${COLORS.gold}, ${COLORS.goldLight})`,
+                  borderRadius: "2px",
+                  transition: "width 80ms linear",
+                }} />
+              </div>
+            )}
+
+            {/* Preset list */}
+            {presets.length > 0 && (
+              <div style={{
+                flex: 1,
+                overflowY: "auto",
+                background: "#0a0a0a",
+                borderRadius: "2px",
+                border: "2px inset #222",
+              }}>
+                {presets.map((preset) => (
+                  <button
+                    key={preset.number}
+                    onClick={() => loadPreset(preset)}
+                    aria-label={`Load preset ${preset.number + 1}: ${preset.name || "unnamed"}`}
+                    style={{
+                      display: "flex",
+                      gap: "10px",
+                      width: "100%",
+                      padding: "4px 10px",
+                      background: currentPreset === preset.number ? "#2a2a1a" : "transparent",
+                      border: "none",
+                      borderBottom: "1px solid #1a1a1a",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: "11px",
+                      color: currentPreset === preset.number ? COLORS.gold : COLORS.text,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (currentPreset !== preset.number) e.currentTarget.style.background = "#1a1a10";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (currentPreset !== preset.number) e.currentTarget.style.background = "transparent";
+                    }}
+                  >
+                    <span style={{
+                      minWidth: "30px",
+                      color: COLORS.textDim,
+                      fontWeight: "bold",
+                    }}>
+                      {String(preset.number + 1).padStart(3, "0")}
+                    </span>
+                    <span>{preset.name || `Preset ${preset.number + 1}`}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {presets.length === 0 && !fetchingPresets && (
+              <div style={{
+                color: "#444",
+                fontSize: "11px",
+                fontFamily: "'JetBrains Mono', monospace",
+                textAlign: "center",
+                padding: "12px",
+              }}>
+                {connected
+                  ? "Click \"Fetch All\" to load presets"
+                  : "Connect to fetch presets"}
+              </div>
+            )}
+          </BevelPanel>
+        </div>
+
+        {/* ============ MAIN CONTENT ============ */}
+        <div style={{ flex: 1, maxWidth: "960px", minWidth: 0 }}>
 
         {/* MIDI Not Supported Warning */}
         {!midiSupported && (
@@ -1233,270 +1540,6 @@ export default function PocketPodEditor() {
             </span>
           </div>
         )}
-
-        {/* ============ MIDI CONNECTION PANEL ============ */}
-        <BevelPanel style={{ marginTop: "4px", padding: "12px 16px" }}>
-          {sectionLabel("MIDI Connection")}
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "end" }}>
-            <div style={{ flex: 1, minWidth: "180px" }}>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "9px",
-                  color: COLORS.textDim,
-                  marginBottom: "3px",
-                  fontWeight: "bold",
-                  letterSpacing: "0.5px",
-                  textTransform: "uppercase",
-                }}
-              >
-                MIDI Input
-              </label>
-              <select
-                value={selectedInput}
-                onChange={(e) => setSelectedInput(e.target.value)}
-                disabled={connected}
-                style={{
-                  width: "100%",
-                  padding: "5px 8px",
-                  background: "#1a1a10",
-                  border: "1px solid #555",
-                  borderRadius: "2px",
-                  color: COLORS.text,
-                  fontSize: "12px",
-                  fontFamily: "'JetBrains Mono', monospace",
-                }}
-              >
-                <option value="">Select input...</option>
-                {inputs.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ flex: 1, minWidth: "180px" }}>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "9px",
-                  color: COLORS.textDim,
-                  marginBottom: "3px",
-                  fontWeight: "bold",
-                  letterSpacing: "0.5px",
-                  textTransform: "uppercase",
-                }}
-              >
-                MIDI Output
-              </label>
-              <select
-                value={selectedOutput}
-                onChange={(e) => setSelectedOutput(e.target.value)}
-                disabled={connected}
-                style={{
-                  width: "100%",
-                  padding: "5px 8px",
-                  background: "#1a1a10",
-                  border: "1px solid #555",
-                  borderRadius: "2px",
-                  color: COLORS.text,
-                  fontSize: "12px",
-                  fontFamily: "'JetBrains Mono', monospace",
-                }}
-              >
-                <option value="">Select output...</option>
-                {outputs.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              onClick={connected ? () => disconnect() : connect}
-              disabled={!midiSupported || (!connected && (!selectedInput || !selectedOutput))}
-              style={{
-                padding: "6px 20px",
-                background: connected
-                  ? `linear-gradient(180deg, #5a3a2a, #3a1a0a)`
-                  : `linear-gradient(180deg, ${COLORS.goldLight}, ${COLORS.goldDark})`,
-                border: connected
-                  ? `1px solid ${COLORS.bevelLight}`
-                  : `1px solid ${COLORS.goldDark}`,
-                borderRadius: "3px",
-                color: connected ? COLORS.text : "#1a0a04",
-                fontWeight: "bold",
-                fontSize: "11px",
-                cursor: "pointer",
-                letterSpacing: "0.5px",
-                textTransform: "uppercase",
-                fontFamily: "system-ui, sans-serif",
-              }}
-            >
-              {connected ? "Disconnect" : "Connect"}
-            </button>
-
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <LED active={connected} color="green" size={8} />
-              <span
-                style={{
-                  fontSize: "10px",
-                  color: connected ? COLORS.ledGreen : COLORS.textDim,
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontWeight: "bold",
-                }}
-              >
-                {connected ? "CONNECTED" : "DISCONNECTED"}
-              </span>
-            </div>
-          </div>
-
-          {deviceInfo && (
-            <div
-              style={{
-                marginTop: "8px",
-                padding: "4px 8px",
-                background: "rgba(0,0,0,0.2)",
-                borderRadius: "2px",
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: "10px",
-              }}
-            >
-              <span style={{ color: "#666" }}>Device: </span>
-              <span style={{ color: COLORS.ledGreen }}>
-                Line 6 Pocket POD (v{deviceInfo.version})
-              </span>
-              <span style={{ color: "#444", marginLeft: "12px" }}>
-                MFR: {deviceInfo.manufacturer} | FAM: {deviceInfo.family} | MBR: {deviceInfo.member}
-              </span>
-            </div>
-          )}
-        </BevelPanel>
-
-        {/* ============ PRESET LIBRARY ============ */}
-        <BevelPanel style={{ marginTop: "4px", padding: "10px 16px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-            {sectionLabel("Preset Library")}
-            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-              {fetchingPresets && (
-                <span style={{
-                  fontSize: "10px",
-                  color: COLORS.ledAmber,
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontWeight: "bold",
-                }}>
-                  {fetchProgress}/124
-                </span>
-              )}
-              <button
-                onClick={fetchAllPresets}
-                disabled={!connected || fetchingPresets}
-                style={{
-                  padding: "4px 12px",
-                  background: fetchingPresets
-                    ? `linear-gradient(180deg, #3a3a2a, #2a2a1a)`
-                    : `linear-gradient(180deg, ${COLORS.goldLight}, ${COLORS.goldDark})`,
-                  border: `1px solid ${fetchingPresets ? '#555' : COLORS.goldDark}`,
-                  borderRadius: "3px",
-                  color: fetchingPresets ? COLORS.textDim : "#1a0a04",
-                  fontWeight: "bold",
-                  fontSize: "10px",
-                  cursor: fetchingPresets || !connected ? "default" : "pointer",
-                  letterSpacing: "0.5px",
-                  textTransform: "uppercase",
-                  fontFamily: "system-ui, sans-serif",
-                  opacity: !connected ? 0.5 : 1,
-                }}
-              >
-                {fetchingPresets ? "Fetching..." : "Fetch All Presets"}
-              </button>
-            </div>
-          </div>
-
-          {/* Progress bar */}
-          {fetchingPresets && (
-            <div style={{
-              height: "4px",
-              background: "#1a1a10",
-              borderRadius: "2px",
-              marginBottom: "8px",
-              border: "1px solid #333",
-              overflow: "hidden",
-            }}>
-              <div style={{
-                height: "100%",
-                width: `${(fetchProgress / 124) * 100}%`,
-                background: `linear-gradient(90deg, ${COLORS.goldDark}, ${COLORS.gold}, ${COLORS.goldLight})`,
-                borderRadius: "2px",
-                transition: "width 80ms linear",
-              }} />
-            </div>
-          )}
-
-          {/* Preset list */}
-          {presets.length > 0 && (
-            <div style={{
-              maxHeight: "200px",
-              overflowY: "auto",
-              background: "#0a0a0a",
-              borderRadius: "2px",
-              border: "2px inset #222",
-            }}>
-              {presets.map((preset) => (
-                <button
-                  key={preset.number}
-                  onClick={() => loadPreset(preset)}
-                  aria-label={`Load preset ${preset.number + 1}: ${preset.name || "unnamed"}`}
-                  style={{
-                    display: "flex",
-                    gap: "10px",
-                    width: "100%",
-                    padding: "4px 10px",
-                    background: currentPreset === preset.number ? "#2a2a1a" : "transparent",
-                    border: "none",
-                    borderBottom: "1px solid #1a1a1a",
-                    cursor: "pointer",
-                    textAlign: "left",
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: "11px",
-                    color: currentPreset === preset.number ? COLORS.gold : COLORS.text,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (currentPreset !== preset.number) e.currentTarget.style.background = "#1a1a10";
-                  }}
-                  onMouseLeave={(e) => {
-                    if (currentPreset !== preset.number) e.currentTarget.style.background = "transparent";
-                  }}
-                >
-                  <span style={{
-                    minWidth: "30px",
-                    color: COLORS.textDim,
-                    fontWeight: "bold",
-                  }}>
-                    {String(preset.number + 1).padStart(3, "0")}
-                  </span>
-                  <span>{preset.name || `Preset ${preset.number + 1}`}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {presets.length === 0 && !fetchingPresets && (
-            <div style={{
-              color: "#444",
-              fontSize: "11px",
-              fontFamily: "'JetBrains Mono', monospace",
-              textAlign: "center",
-              padding: "12px",
-            }}>
-              {connected
-                ? "Click \"Fetch All Presets\" to load preset library from device"
-                : "Connect to your Pocket POD to fetch presets"}
-            </div>
-          )}
-        </BevelPanel>
 
         {/* ============ HEADER PANEL ============ */}
         <BevelPanel screws style={{ marginTop: "4px", padding: "16px 24px" }}>
@@ -2259,7 +2302,8 @@ export default function PocketPodEditor() {
         >
           Pocket POD Web MIDI Editor &bull; Drag knobs vertically to adjust &bull; Requires Chrome with SysEx permission
         </div>
-      </div>
+        </div>{/* end main content */}
+      </div>{/* end flex container */}
     </div>
   );
 }

@@ -123,11 +123,11 @@ describe('PocketPodEditor', () => {
     expect(screen.getByText('pocket POD')).toBeInTheDocument();
   });
 
-  it('shows "DISCONNECTED" state initially', async () => {
+  it('shows "OFF" state initially', async () => {
     await act(async () => {
       render(<PocketPodEditor />);
     });
-    expect(screen.getByText('DISCONNECTED')).toBeInTheDocument();
+    expect(screen.getByText('OFF')).toBeInTheDocument();
   });
 
   it('shows MIDI input and output selects', async () => {
@@ -180,7 +180,7 @@ describe('PocketPodEditor', () => {
       vi.advanceTimersByTime(300);
     });
 
-    expect(screen.getByText('CONNECTED')).toBeInTheDocument();
+    expect(screen.getByText('ON')).toBeInTheDocument();
     expect(screen.getByText('Disconnect')).toBeInTheDocument();
   });
 
@@ -194,13 +194,13 @@ describe('PocketPodEditor', () => {
       fireEvent.click(screen.getByText('Connect'));
       vi.advanceTimersByTime(300);
     });
-    expect(screen.getByText('CONNECTED')).toBeInTheDocument();
+    expect(screen.getByText('ON')).toBeInTheDocument();
 
     // Disconnect
     await act(async () => {
       fireEvent.click(screen.getByText('Disconnect'));
     });
-    expect(screen.getByText('DISCONNECTED')).toBeInTheDocument();
+    expect(screen.getByText('OFF')).toBeInTheDocument();
   });
 
   // --- Incoming CC handling ---
@@ -308,7 +308,7 @@ describe('PocketPodEditor', () => {
     });
 
     // Device info should be displayed
-    expect(screen.getByText(/Line 6 Pocket POD/)).toBeInTheDocument();
+    expect(screen.getByText(/Pocket POD v/)).toBeInTheDocument();
   });
 
   // --- Incoming SysEx patch dump (edit buffer) ---
@@ -464,7 +464,7 @@ describe('PocketPodEditor', () => {
       vi.advanceTimersByTime(300);
     });
 
-    const fetchBtn = screen.getByText('Fetch All Presets');
+    const fetchBtn = screen.getByText('Fetch All');
     await act(async () => {
       fireEvent.click(fetchBtn);
     });
