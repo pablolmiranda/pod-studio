@@ -1211,33 +1211,39 @@ export default function PocketPodEditor() {
 
       {/* ---- TOP BAR ---- */}
       <div style={{
-        padding: "16px 20px",
         borderBottom: `1px solid ${COLORS.border}`,
-        display: "flex",
-        alignItems: "baseline",
-        gap: "12px",
+        display: "grid",
+        gridTemplateColumns: "340px minmax(0, 960px)",
+        justifyContent: "center",
       }}>
         <div style={{
-          fontSize: "22px",
-          fontWeight: 700,
-          fontFamily: "'Outfit', sans-serif",
-          color: COLORS.textPrimary,
-          letterSpacing: "-0.5px",
+          padding: "16px 12px",
+          display: "flex",
+          alignItems: "baseline",
+          gap: "10px",
         }}>
-          Pod Studio
-        </div>
-        <div style={{
-          fontSize: "11px",
-          fontWeight: 500,
-          color: COLORS.textMuted,
-          letterSpacing: "2px",
-          textTransform: "uppercase",
-        }}>
-          Pod Products Editor
+          <span style={{
+            fontSize: "22px",
+            fontWeight: 700,
+            fontFamily: "'Outfit', sans-serif",
+            color: COLORS.textPrimary,
+            letterSpacing: "-0.5px",
+          }}>
+            Pod Studio
+          </span>
+          <span style={{
+            fontSize: "11px",
+            fontWeight: 500,
+            color: COLORS.textMuted,
+            letterSpacing: "2px",
+            textTransform: "uppercase",
+          }}>
+            Pod Products Editor
+          </span>
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "240px minmax(0, 960px)", gridTemplateRows: "auto 1fr", justifyContent: "center", flex: 1 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "340px minmax(0, 960px)", gridTemplateRows: "auto 1fr", justifyContent: "center", flex: 1 }}>
 
           {/* ============ MIDI CONNECTION (Row 1, Col 1) ============ */}
           <BevelPanel variant="sidebar" style={{ padding: "12px", gridColumn: 1, gridRow: 1, display: "flex", flexDirection: "column" }}>
