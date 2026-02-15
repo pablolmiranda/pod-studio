@@ -656,4 +656,28 @@ describe('PocketPodEditor', () => {
     const toggleLabels = toggles.map(t => t.getAttribute('aria-label'));
     expect(toggleLabels).toContain('Effect \u00b7 Rotary off');
   });
+
+  // --- Volume Pedal Position Toggle ---
+  it('renders volume position as post-amp toggle by default (vol_position=127)', async () => {
+    setupMIDIMock();
+    await act(async () => {
+      render(<PocketPodEditor />);
+    });
+    const toggle = screen.getByRole('switch', { name: /volume position/i });
+    expect(toggle).toHaveAttribute('aria-checked', 'true');
+    expect(toggle.getAttribute('aria-label')).toContain('post-amp');
+  });
+
+  it('clicking volume position toggle switches to pre-amp', async () => {
+    setupMIDIMock();
+    await act(async () => {
+      render(<PocketPodEditor />);
+    });
+    const toggle = screen.getByRole('switch', { name: /volume position/i });
+    await act(async () => {
+      fireEvent.click(toggle);
+    });
+    expect(toggle).toHaveAttribute('aria-checked', 'false');
+    expect(toggle.getAttribute('aria-label')).toContain('pre-amp');
+  });
 });

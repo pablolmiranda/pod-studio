@@ -1824,16 +1824,60 @@ export default function PocketPodEditor() {
         {/* ============ VOLUME PEDAL ============ */}
         <BevelPanel style={{ padding: "12px 16px" }}>
           {sectionLabel("Volume Pedal")}
-          <div style={{ display: "flex", gap: "16px", justifyContent: "center" }}>
-            <ChromeKnob
-              value={params.vol_position}
-              min={0}
-              max={127}
-              label="Position"
-              onChange={(v) => handleParamChange("vol_position", v)}
-              size="md"
-
-            />
+          <div style={{ display: "flex", gap: "16px", justifyContent: "center", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  color: params.vol_position < 64 ? COLORS.accent : COLORS.textMuted,
+                  fontFamily: "'Outfit', sans-serif",
+                  transition: "color 150ms ease",
+                }}
+              >
+                Pre-Amp
+              </span>
+              <button
+                onClick={() => handleParamChange("vol_position", params.vol_position < 64 ? 127 : 0)}
+                role="switch"
+                aria-checked={params.vol_position >= 64}
+                aria-label={`Volume position ${params.vol_position < 64 ? "pre-amp" : "post-amp"}`}
+                style={{
+                  width: "32px",
+                  height: "16px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: params.vol_position >= 64 ? COLORS.accent : COLORS.surface3,
+                  position: "relative",
+                  cursor: "pointer",
+                  transition: "background 150ms ease",
+                  padding: 0,
+                  flexShrink: 0,
+                }}
+              >
+                <span style={{
+                  position: "absolute",
+                  top: "2px",
+                  left: params.vol_position >= 64 ? "16px" : "2px",
+                  width: "12px",
+                  height: "12px",
+                  borderRadius: "50%",
+                  background: params.vol_position >= 64 ? COLORS.textOnAccent : COLORS.textMuted,
+                  transition: "left 150ms ease",
+                }} />
+              </button>
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  color: params.vol_position >= 64 ? COLORS.accent : COLORS.textMuted,
+                  fontFamily: "'Outfit', sans-serif",
+                  transition: "color 150ms ease",
+                }}
+              >
+                Post-Amp
+              </span>
+            </div>
             <ChromeKnob
               value={params.vol_level}
               min={0}
