@@ -1546,7 +1546,7 @@ export default function PocketPodEditor() {
         </BevelPanel>
 
         {/* ============ NOISE GATE / TOGGLES / REVERB DETAIL ROW ============ */}
-        <div style={{ display: "flex", gap: "0" }}>
+        <div style={{ display: "flex", gap: "0", borderTop: `1px solid ${COLORS.border}` }}>
           {/* Noise Gate */}
           <BevelPanel style={{ flex: "1 1 180px", padding: "12px" }}>
             {sectionLabel("Noise Gate", {
@@ -1686,7 +1686,7 @@ export default function PocketPodEditor() {
           const currentEffectKnobs = EFFECT_KNOB_CONFIGS[effectCategory] || [];
           const hasDelay = DELAY_EFFECTS.has(params.effect);
           return (
-        <div style={{ display: "flex", gap: "0" }}>
+        <div style={{ display: "flex", gap: "0", borderTop: `1px solid ${COLORS.border}` }}>
           {/* Delay */}
           <BevelPanel style={{ flex: "1 1 50%", padding: "12px" }}>
             {sectionLabel("Delay", {
@@ -1766,7 +1766,7 @@ export default function PocketPodEditor() {
         })()}
 
         {/* ============ WAH / VOLUME PEDAL ROW ============ */}
-        <div style={{ display: "flex", gap: "0" }}>
+        <div style={{ display: "flex", gap: "0", borderTop: `1px solid ${COLORS.border}` }}>
           <BevelPanel style={{ flex: "1 1 50%", padding: "12px" }}>
             {sectionLabel("Wah Pedal")}
             <div style={{ display: "flex", gap: "6px", justifyContent: "center", flexWrap: "wrap" }}>
@@ -1874,7 +1874,7 @@ export default function PocketPodEditor() {
         </div>
 
         {/* ============ TONE NOTES ============ */}
-        <BevelPanel style={{ padding: "16px" }}>
+        <BevelPanel style={{ padding: "16px", borderTop: `1px solid ${COLORS.border}` }}>
           {sectionLabel("Tone Notes")}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "8px" }}>
             {[["song", "Song"], ["guitarist", "Guitarist"], ["band", "Band"], ["style", "Style"]].map(([key, label]) => (
@@ -1902,7 +1902,7 @@ export default function PocketPodEditor() {
         </BevelPanel>
 
         {/* ============ MIDI MONITOR ============ */}
-        <BevelPanel style={{ padding: "12px" }}>
+        <BevelPanel style={{ padding: "12px", borderTop: `1px solid ${COLORS.border}` }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
             {sectionLabel("MIDI Monitor")}
             <button
