@@ -550,4 +550,18 @@ describe('PocketPodEditor', () => {
     // The log entry should be gone
     expect(screen.queryByText('B0 0D 40')).not.toBeInTheDocument();
   });
+
+  it('renders section label inline toggles for Noise Gate, Reverb, Delay, Effect', async () => {
+    setupMIDIMock();
+    await act(async () => {
+      render(<PocketPodEditor />);
+    });
+    // These sections have inline on/off toggle switches in their titles
+    const toggles = screen.getAllByRole('switch');
+    const toggleLabels = toggles.map(t => t.getAttribute('aria-label'));
+    expect(toggleLabels).toContain('Noise Gate off');
+    expect(toggleLabels).toContain('Reverb off');
+    expect(toggleLabels).toContain('Delay off');
+    expect(toggleLabels).toContain('Effect off');
+  });
 });

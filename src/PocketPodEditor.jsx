@@ -1071,7 +1071,7 @@ export default function PocketPodEditor() {
   };
 
   // --- Section label style ---
-  const sectionLabel = (text) => (
+  const sectionLabel = (text, toggle) => (
     <div
       style={{
         fontSize: "13px",
@@ -1081,8 +1081,42 @@ export default function PocketPodEditor() {
         fontFamily: "'Outfit', sans-serif",
         fontWeight: 600,
         marginBottom: "12px",
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
       }}
     >
+      {toggle && (
+        <button
+          onClick={toggle.onToggle}
+          role="switch"
+          aria-checked={toggle.active}
+          aria-label={`${text} ${toggle.active ? "on" : "off"}`}
+          style={{
+            width: "28px",
+            height: "14px",
+            borderRadius: "7px",
+            border: "none",
+            background: toggle.active ? COLORS.accent : COLORS.surface3,
+            position: "relative",
+            cursor: "pointer",
+            transition: "background 150ms ease",
+            padding: 0,
+            flexShrink: 0,
+          }}
+        >
+          <span style={{
+            position: "absolute",
+            top: "2px",
+            left: toggle.active ? "14px" : "2px",
+            width: "10px",
+            height: "10px",
+            borderRadius: "50%",
+            background: toggle.active ? COLORS.textOnAccent : COLORS.textMuted,
+            transition: "left 150ms ease",
+          }} />
+        </button>
+      )}
       {text}
     </div>
   );
@@ -1447,15 +1481,10 @@ export default function PocketPodEditor() {
         <div style={{ display: "flex", gap: "0" }}>
           {/* Noise Gate */}
           <BevelPanel style={{ flex: "1 1 180px", padding: "12px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              {sectionLabel("Noise Gate")}
-              <ToggleButton
-                label="Gate"
-                active={params.noise_gate_enable === 1}
-                onToggle={() => handleParamChange("noise_gate_enable", params.noise_gate_enable === 1 ? 0 : 1)}
-                color="green"
-              />
-            </div>
+            {sectionLabel("Noise Gate", {
+              active: params.noise_gate_enable === 1,
+              onToggle: () => handleParamChange("noise_gate_enable", params.noise_gate_enable === 1 ? 0 : 1),
+            })}
             <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
               <ChromeKnob
                 value={params.noise_gate}
@@ -1477,45 +1506,57 @@ export default function PocketPodEditor() {
           </BevelPanel>
 
           {/* Toggle switches */}
-          <BevelPanel style={{ flex: "0 0 130px", padding: "12px", display: "flex", flexDirection: "column", gap: "6px", alignItems: "center", justifyContent: "center" }}>
+          <BevelPanel style={{ flex: "0 0 130px", padding: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
             {sectionLabel("Toggles")}
-            <ToggleButton
-              label="Dist"
-              active={params.dist_enable === 1}
-              onToggle={() => handleParamChange("dist_enable", params.dist_enable === 1 ? 0 : 1)}
-              color="red"
-            />
-            <ToggleButton
-              label="Drive"
-              active={params.drive_enable === 1}
-              onToggle={() => handleParamChange("drive_enable", params.drive_enable === 1 ? 0 : 1)}
-              color="amber"
-            />
-            <ToggleButton
-              label="EQ"
-              active={params.eq_enable === 1}
-              onToggle={() => handleParamChange("eq_enable", params.eq_enable === 1 ? 0 : 1)}
-              color="green"
-            />
-            <ToggleButton
-              label="Bright"
-              active={params.bright_switch === 1}
-              onToggle={() => handleParamChange("bright_switch", params.bright_switch === 1 ? 0 : 1)}
-              color="amber"
-            />
+            {[
+              { label: "Dist", param: "dist_enable" },
+              { label: "Drive", param: "drive_enable" },
+              { label: "EQ", param: "eq_enable" },
+              { label: "Bright", param: "bright_switch" },
+            ].map(({ label, param }) => (
+              <div key={param} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <button
+                  onClick={() => handleParamChange(param, params[param] === 1 ? 0 : 1)}
+                  role="switch"
+                  aria-checked={params[param] === 1}
+                  aria-label={`${label} ${params[param] === 1 ? "on" : "off"}`}
+                  style={{
+                    width: "28px",
+                    height: "14px",
+                    borderRadius: "7px",
+                    border: "none",
+                    background: params[param] === 1 ? COLORS.accent : COLORS.surface3,
+                    position: "relative",
+                    cursor: "pointer",
+                    transition: "background 150ms ease",
+                    padding: 0,
+                    flexShrink: 0,
+                  }}
+                >
+                  <span style={{
+                    position: "absolute",
+                    top: "2px",
+                    left: params[param] === 1 ? "14px" : "2px",
+                    width: "10px",
+                    height: "10px",
+                    borderRadius: "50%",
+                    background: params[param] === 1 ? COLORS.textOnAccent : COLORS.textMuted,
+                    transition: "left 150ms ease",
+                  }} />
+                </button>
+                <span style={{ fontSize: "11px", fontWeight: 500, color: params[param] === 1 ? COLORS.accent : COLORS.textSecondary, fontFamily: "'Outfit', sans-serif" }}>
+                  {label}
+                </span>
+              </div>
+            ))}
           </BevelPanel>
 
           {/* Reverb Detail */}
           <BevelPanel style={{ flex: "2 1 340px", padding: "12px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              {sectionLabel("Reverb Detail")}
-              <ToggleButton
-                label="Reverb"
-                active={params.reverb_enable === 1}
-                onToggle={() => handleParamChange("reverb_enable", params.reverb_enable === 1 ? 0 : 1)}
-                color="green"
-              />
-            </div>
+            {sectionLabel("Reverb", {
+              active: params.reverb_enable === 1,
+              onToggle: () => handleParamChange("reverb_enable", params.reverb_enable === 1 ? 0 : 1),
+            })}
             <div style={{ display: "flex", gap: "8px", justifyContent: "center", flexWrap: "wrap", alignItems: "flex-start" }}>
               <ChromeKnob
                 value={params.reverb_decay}
@@ -1567,15 +1608,10 @@ export default function PocketPodEditor() {
         <div style={{ display: "flex", gap: "0" }}>
           {/* Delay */}
           <BevelPanel style={{ flex: "1 1 50%", padding: "12px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              {sectionLabel("Delay")}
-              <ToggleButton
-                label="Delay"
-                active={params.delay_enable === 1}
-                onToggle={() => handleParamChange("delay_enable", params.delay_enable === 1 ? 0 : 1)}
-                color="green"
-              />
-            </div>
+            {sectionLabel("Delay", {
+              active: params.delay_enable === 1,
+              onToggle: () => handleParamChange("delay_enable", params.delay_enable === 1 ? 0 : 1),
+            })}
             <div style={{ display: "flex", gap: "6px", justifyContent: "center", flexWrap: "wrap" }}>
               <ChromeKnob
                 value={params.delay_time}
@@ -1614,15 +1650,10 @@ export default function PocketPodEditor() {
 
           {/* Effect Params */}
           <BevelPanel style={{ flex: "1 1 50%", padding: "12px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              {sectionLabel("Effect Parameters")}
-              <ToggleButton
-                label="Mod FX"
-                active={params.mod_fx_enable === 1}
-                onToggle={() => handleParamChange("mod_fx_enable", params.mod_fx_enable === 1 ? 0 : 1)}
-                color="green"
-              />
-            </div>
+            {sectionLabel("Effect", {
+              active: params.mod_fx_enable === 1,
+              onToggle: () => handleParamChange("mod_fx_enable", params.mod_fx_enable === 1 ? 0 : 1),
+            })}
             <div style={{ display: "flex", gap: "6px", justifyContent: "center", flexWrap: "wrap" }}>
               <ChromeKnob
                 value={params.effect_tweak}
