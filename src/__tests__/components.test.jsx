@@ -142,10 +142,11 @@ describe('BevelPanel', () => {
 
 // --- ChromeKnob ---
 describe('ChromeKnob', () => {
-  it('renders label and value', () => {
+  it('renders label and normalized value (0-10 scale)', () => {
     render(<ChromeKnob value={64} min={0} max={127} label="Drive" onChange={() => {}} />);
     expect(screen.getByText('Drive')).toBeInTheDocument();
-    expect(screen.getByText('64')).toBeInTheDocument();
+    // 64/127*10 = 5.0
+    expect(screen.getByText('5.0')).toBeInTheDocument();
   });
 
   it('has role=slider with aria-value attributes', () => {
@@ -220,9 +221,10 @@ describe('ChromeKnob', () => {
     expect(screen.getByText('Off')).toBeInTheDocument();
   });
 
-  it('renders raw number when formatValue is not provided', () => {
+  it('renders normalized 0-10 value when formatValue is not provided', () => {
     render(<ChromeKnob value={64} min={0} max={127} label="Vol" onChange={() => {}} />);
-    expect(screen.getByText('64')).toBeInTheDocument();
+    // 64/127*10 = 5.0
+    expect(screen.getByText('5.0')).toBeInTheDocument();
   });
 });
 

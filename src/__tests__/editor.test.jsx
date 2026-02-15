@@ -222,8 +222,8 @@ describe('PocketPodEditor', () => {
       handler({ data: new Uint8Array([0xB0, 13, 100]) });
     });
 
-    // Drive value should be displayed somewhere as "100"
-    const driveValues = screen.getAllByText('100');
+    // Drive value 100 displayed as normalized 0-10 scale: (100/127*10) = 7.9
+    const driveValues = screen.getAllByText('7.9');
     expect(driveValues.length).toBeGreaterThan(0);
   });
 

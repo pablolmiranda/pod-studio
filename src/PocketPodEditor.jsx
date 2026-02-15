@@ -393,7 +393,7 @@ function parsePatchDump(data) {
 function ScrewHead() { return null; }
 
 // --- Card (replaces BevelPanel) ---
-function BevelPanel({ children, style = {}, screws = false, variant = "main" }) {
+function BevelPanel({ children, style = {}, screws = false, variant = "main", className }) {
   const baseStyle = {
     background: COLORS.surface1,
     borderRadius: "0",
@@ -408,6 +408,7 @@ function BevelPanel({ children, style = {}, screws = false, variant = "main" }) 
   }
   return (
     <div
+      className={className}
       style={{
         ...baseStyle,
         ...style,
@@ -489,7 +490,7 @@ function ChromeKnob({ value, min, max, label, onChange, size = "md", variant, fo
   const px = sizes[size] || sizes.md;
 
   const normalizedValue = (value - min) / (max - min);
-  const angle = -135 + normalizedValue * 270;
+  const angle = 135 + normalizedValue * 270;
 
   const handleMouseDown = (e) => {
     dragging.current = true;
@@ -587,7 +588,7 @@ function ChromeKnob({ value, min, max, label, onChange, size = "md", variant, fo
   // 11 tick marks spanning 270 degrees
   const tickCount = 11;
   const ticks = Array.from({ length: tickCount }, (_, i) => {
-    const tickAngle = (-135 + (i / (tickCount - 1)) * 270) * (Math.PI / 180);
+    const tickAngle = (135 + (i / (tickCount - 1)) * 270) * (Math.PI / 180);
     const innerR = tickR - 3;
     const outerR = tickR + 2;
     return {
@@ -709,7 +710,7 @@ function ChromeKnob({ value, min, max, label, onChange, size = "md", variant, fo
           fontWeight: 500,
         }}
       >
-        {formatValue ? formatValue(value) : value}
+        {formatValue ? formatValue(value) : (value / max * 10).toFixed(1)}
       </span>
     </div>
   );
@@ -1210,7 +1211,7 @@ export default function PocketPodEditor() {
       `}</style>
 
       {/* ---- TOP BAR ---- */}
-      <div style={{
+      <div className="top-bar" style={{
         borderBottom: `1px solid ${COLORS.border}`,
         display: "grid",
         gridTemplateColumns: "340px minmax(0, 960px)",
@@ -1243,10 +1244,10 @@ export default function PocketPodEditor() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "340px minmax(0, 960px)", gridTemplateRows: "auto 1fr", justifyContent: "center", flex: 1 }}>
+      <div className="app-layout" style={{ display: "grid", gridTemplateColumns: "340px minmax(0, 960px)", gridTemplateRows: "auto 1fr", justifyContent: "center", flex: 1 }}>
 
           {/* ============ MIDI CONNECTION (Row 1, Col 1) ============ */}
-          <BevelPanel variant="sidebar" style={{ padding: "12px", gridColumn: 1, gridRow: 1, display: "flex", flexDirection: "column" }}>
+          <BevelPanel className="midi-connection" variant="sidebar" style={{ padding: "12px", gridColumn: 1, gridRow: 1, display: "flex", flexDirection: "column" }}>
             {sectionLabel("MIDI Connection")}
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               <div>
@@ -1317,8 +1318,8 @@ export default function PocketPodEditor() {
           </BevelPanel>
 
           {/* ============ PRESET LIBRARY (Row 2, Col 1) ============ */}
-          <div style={{ gridColumn: 1, gridRow: 2, position: "sticky", top: 0, alignSelf: "start", maxHeight: "100vh", overflowY: "auto" }}>
-          <BevelPanel variant="sidebar" style={{ padding: "12px", display: "flex", flexDirection: "column", height: "100%" }}>
+          <div className="preset-library-container" style={{ gridColumn: 1, gridRow: 2, position: "sticky", top: 0, alignSelf: "start", maxHeight: "100vh", overflowY: "auto" }}>
+          <BevelPanel className="preset-library" variant="sidebar" style={{ padding: "12px", display: "flex", flexDirection: "column", height: "100%" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
               {sectionLabel("Preset Library")}
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
@@ -1404,7 +1405,7 @@ export default function PocketPodEditor() {
           </div>
 
         {/* ============ HEADER AREA (Row 1, Col 2) ============ */}
-        <div style={{ gridColumn: 2, gridRow: 1, display: "flex", flexDirection: "column" }}>
+        <div className="header-area" style={{ gridColumn: 2, gridRow: 1, display: "flex", flexDirection: "column" }}>
 
         {/* MIDI Not Supported Warning */}
         {!midiSupported && (
@@ -1435,7 +1436,7 @@ export default function PocketPodEditor() {
         )}
 
         {/* ============ HEADER PANEL ============ */}
-        <BevelPanel style={{ padding: "20px", flex: 1 }}>
+        <BevelPanel className="header-panel" style={{ padding: "20px", flex: 1 }}>
           {/* Display panel */}
           <div style={{ background: COLORS.displayBg, border: `1px solid ${COLORS.border}`, borderRadius: "0", padding: "12px 20px", textAlign: "center", marginBottom: "16px" }}>
             <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "16px", color: COLORS.displayText, fontWeight: 600, textShadow: `0 0 12px ${COLORS.displayText}33` }}>
@@ -1447,7 +1448,7 @@ export default function PocketPodEditor() {
           </div>
 
           {/* Model selectors row */}
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center", alignItems: "flex-end" }}>
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center", alignItems: "flex-start" }}>
             <div style={{ flex: 1, minWidth: "140px" }}>
               <div style={{ fontSize: "11px", color: COLORS.textSecondary, marginBottom: "4px", fontWeight: 500 }}>Amp Model</div>
               <select value={params.ampModel} onChange={(e) => handleParamChange("ampModel", Number(e.target.value))} style={{ ...selectStyle, width: "100%", maxWidth: "none" }}>
@@ -1472,10 +1473,10 @@ export default function PocketPodEditor() {
         </div>
 
         {/* ============ MAIN CONTENT (Row 2, Col 2) ============ */}
-        <div style={{ gridColumn: 2, gridRow: 2 }}>
+        <div className="main-content" style={{ gridColumn: 2, gridRow: 2 }}>
 
         {/* ============ MAIN KNOBS ROW ============ */}
-        <BevelPanel style={{ padding: "16px 20px" }}>
+        <BevelPanel className="amp-controls" style={{ padding: "16px 20px" }}>
           {sectionLabel("Amp Controls")}
           <div
             style={{
@@ -1546,9 +1547,9 @@ export default function PocketPodEditor() {
         </BevelPanel>
 
         {/* ============ NOISE GATE / TOGGLES / REVERB DETAIL ROW ============ */}
-        <div style={{ display: "flex", gap: "0", borderTop: `1px solid ${COLORS.border}` }}>
+        <div className="gate-toggles-reverb-row" style={{ display: "flex", gap: "0", borderTop: `1px solid ${COLORS.border}` }}>
           {/* Noise Gate */}
-          <BevelPanel style={{ flex: "1 1 180px", padding: "12px" }}>
+          <BevelPanel className="noise-gate" style={{ flex: "1 1 180px", padding: "12px" }}>
             {sectionLabel("Noise Gate", {
               active: params.noise_gate_enable === 1,
               onToggle: () => handleParamChange("noise_gate_enable", params.noise_gate_enable === 1 ? 0 : 1),
@@ -1574,7 +1575,7 @@ export default function PocketPodEditor() {
           </BevelPanel>
 
           {/* Toggle switches */}
-          <BevelPanel style={{ flex: "0 0 130px", padding: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
+          <BevelPanel className="toggles" style={{ flex: "0 0 130px", padding: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
             {sectionLabel("Toggles")}
             {[
               { label: "Dist", param: "dist_enable" },
@@ -1620,7 +1621,7 @@ export default function PocketPodEditor() {
           </BevelPanel>
 
           {/* Reverb Detail */}
-          <BevelPanel style={{ flex: "2 1 340px", padding: "12px" }}>
+          <BevelPanel className="reverb" style={{ flex: "2 1 340px", padding: "12px" }}>
             {sectionLabel("Reverb", {
               active: params.reverb_enable === 1,
               onToggle: () => handleParamChange("reverb_enable", params.reverb_enable === 1 ? 0 : 1),
@@ -1686,9 +1687,9 @@ export default function PocketPodEditor() {
           const currentEffectKnobs = EFFECT_KNOB_CONFIGS[effectCategory] || [];
           const hasDelay = DELAY_EFFECTS.has(params.effect);
           return (
-        <div style={{ display: "flex", gap: "0", borderTop: `1px solid ${COLORS.border}` }}>
+        <div className="delay-effect-row" style={{ display: "flex", gap: "0", borderTop: `1px solid ${COLORS.border}` }}>
           {/* Delay */}
-          <BevelPanel style={{ flex: "1 1 50%", padding: "12px" }}>
+          <BevelPanel className="delay" style={{ flex: "1 1 50%", padding: "12px" }}>
             {sectionLabel("Delay", {
               active: params.delay_enable === 1,
               onToggle: () => handleParamChange("delay_enable", params.delay_enable === 1 ? 0 : 1),
@@ -1735,7 +1736,7 @@ export default function PocketPodEditor() {
           </BevelPanel>
 
           {/* Effect Params */}
-          <BevelPanel style={{ flex: "1 1 50%", padding: "12px" }}>
+          <BevelPanel className="effect" style={{ flex: "1 1 50%", padding: "12px" }}>
             {sectionLabel(`Effect \u00b7 ${EFFECT_TYPES[params.effect]}`, {
               active: params.mod_fx_enable === 1,
               onToggle: () => handleParamChange("mod_fx_enable", params.mod_fx_enable === 1 ? 0 : 1),
@@ -1766,8 +1767,8 @@ export default function PocketPodEditor() {
         })()}
 
         {/* ============ WAH / VOLUME PEDAL ROW ============ */}
-        <div style={{ display: "flex", gap: "0", borderTop: `1px solid ${COLORS.border}` }}>
-          <BevelPanel style={{ flex: "1 1 50%", padding: "12px" }}>
+        <div className="wah-volume-row" style={{ display: "flex", gap: "0", borderTop: `1px solid ${COLORS.border}` }}>
+          <BevelPanel className="wah-pedal" style={{ flex: "1 1 50%", padding: "12px" }}>
             {sectionLabel("Wah Pedal")}
             <div style={{ display: "flex", gap: "6px", justifyContent: "center", flexWrap: "wrap" }}>
               <ChromeKnob
@@ -1797,7 +1798,7 @@ export default function PocketPodEditor() {
             </div>
           </BevelPanel>
 
-          <BevelPanel style={{ flex: "1 1 50%", padding: "12px" }}>
+          <BevelPanel className="volume-pedal" style={{ flex: "1 1 50%", padding: "12px" }}>
             {sectionLabel("Volume Pedal")}
             <div style={{ display: "flex", gap: "16px", justifyContent: "center", alignItems: "center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
@@ -1874,7 +1875,7 @@ export default function PocketPodEditor() {
         </div>
 
         {/* ============ TONE NOTES ============ */}
-        <BevelPanel style={{ padding: "16px", borderTop: `1px solid ${COLORS.border}` }}>
+        <BevelPanel className="tone-notes" style={{ padding: "16px", borderTop: `1px solid ${COLORS.border}` }}>
           {sectionLabel("Tone Notes")}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "8px" }}>
             {[["song", "Song"], ["guitarist", "Guitarist"], ["band", "Band"], ["style", "Style"]].map(([key, label]) => (
@@ -1902,7 +1903,7 @@ export default function PocketPodEditor() {
         </BevelPanel>
 
         {/* ============ MIDI MONITOR ============ */}
-        <BevelPanel style={{ padding: "12px", borderTop: `1px solid ${COLORS.border}` }}>
+        <BevelPanel className="midi-monitor" style={{ padding: "12px", borderTop: `1px solid ${COLORS.border}` }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
             {sectionLabel("MIDI Monitor")}
             <button
