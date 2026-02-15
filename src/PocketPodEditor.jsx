@@ -166,6 +166,57 @@ const EFFECT_TYPES = [
   "Delay/Flanger 2",  // 15
 ];
 
+// --- Effect Category Mapping ---
+const EFFECT_CATEGORIES = {
+  0: 'chorus', 1: 'flanger', 2: 'rotary', 3: 'flanger',
+  4: 'chorus', 5: 'tremolo', 6: 'delay_only', 7: 'compressor',
+  8: 'chorus', 9: 'tremolo', 10: 'bypass', 11: 'compressor',
+  12: 'chorus', 13: 'flanger', 14: 'swell', 15: 'flanger',
+};
+
+const DELAY_EFFECTS = new Set([4, 5, 6, 7, 12, 13, 14, 15]);
+
+const EFFECT_KNOB_CONFIGS = {
+  chorus:     [{ stateKey: 'effect_speed', cc: 51, label: 'Speed' }, { stateKey: 'effect_depth', cc: 52, label: 'Depth' }, { stateKey: 'effect_feedback', cc: 53, label: 'Feedback' }, { stateKey: 'effect_predelay', cc: 54, label: 'Pre-Delay' }],
+  flanger:    [{ stateKey: 'effect_speed', cc: 51, label: 'Speed' }, { stateKey: 'effect_depth', cc: 52, label: 'Depth' }, { stateKey: 'effect_feedback', cc: 53, label: 'Feedback' }, { stateKey: 'effect_predelay', cc: 54, label: 'Pre-Delay' }],
+  rotary:     [{ stateKey: 'effect_speed', cc: 55, label: 'Speed' }, { stateKey: 'effect_depth', cc: 56, label: 'Doppler' }],
+  tremolo:    [{ stateKey: 'effect_speed', cc: 58, label: 'Speed' }, { stateKey: 'effect_depth', cc: 59, label: 'Depth' }],
+  compressor: [{ stateKey: 'effect_speed', cc: 42, label: 'Ratio' }],
+  swell:      [{ stateKey: 'effect_speed', cc: 49, label: 'Attack' }],
+  bypass:     [],
+  delay_only: [],
+};
+
+const EFFECT_SPECIFIC_PARAMS = new Set(['effect_speed', 'effect_depth', 'effect_feedback', 'effect_predelay']);
+
+const EFFECT_CC_REVERSE_MAP = {};
+for (const config of Object.values(EFFECT_KNOB_CONFIGS)) {
+  for (const { stateKey, cc } of config) {
+    EFFECT_CC_REVERSE_MAP[cc] = stateKey;
+  }
+}
+
+function getEffectCC(stateKey, effectType) {
+  const category = EFFECT_CATEGORIES[effectType];
+  const config = EFFECT_KNOB_CONFIGS[category];
+  if (!config) return null;
+  const knob = config.find(k => k.stateKey === stateKey);
+  return knob ? knob.cc : null;
+}
+
+const COMP_RATIO_LABELS = [
+  { max: 21, label: 'Off' }, { max: 42, label: '1.4:1' },
+  { max: 64, label: '2:1' }, { max: 85, label: '3:1' },
+  { max: 107, label: '6:1' }, { max: 127, label: '\u221E:1' },
+];
+
+function formatCompRatio(value) {
+  for (const { max, label } of COMP_RATIO_LABELS) {
+    if (value <= max) return label;
+  }
+  return '\u221E:1';
+}
+
 // --- Color Palette ---
 const COLORS = {
   // Surface hierarchy (dark to light)
@@ -427,7 +478,7 @@ function ToggleButton({ label, active, onToggle, color = "green" }) {
 }
 
 // --- Arc Knob ---
-function ChromeKnob({ value, min, max, label, onChange, size = "md", variant }) {
+function ChromeKnob({ value, min, max, label, onChange, size = "md", variant, formatValue }) {
   const knobRef = useRef(null);
   const dragging = useRef(false);
   const startY = useRef(0);
@@ -658,7 +709,7 @@ function ChromeKnob({ value, min, max, label, onChange, size = "md", variant }) 
           fontWeight: 500,
         }}
       >
-        {value}
+        {formatValue ? formatValue(value) : value}
       </span>
     </div>
   );
@@ -723,6 +774,9 @@ export {
   LINE6_MANUFACTURER_ID, POCKET_POD_DEVICE_ID, MIDI_CHANNEL,
   SYSEX_START, SYSEX_END, IDENTITY_REQUEST, REQUEST_EDIT_BUFFER, REQUEST_ALL_PRESETS,
   LED, ToggleButton, ChromeKnob, BevelPanel, LogEntry, ScrewHead,
+  EFFECT_CATEGORIES, DELAY_EFFECTS, EFFECT_KNOB_CONFIGS,
+  EFFECT_SPECIFIC_PARAMS, EFFECT_CC_REVERSE_MAP,
+  getEffectCC, formatCompRatio, COMP_RATIO_LABELS,
 };
 
 // --- Main App ---
@@ -751,6 +805,7 @@ export default function PocketPodEditor() {
   const inputRef = useRef(null);
   const outputRef = useRef(null);
   const logContainerRef = useRef(null);
+  const effectTypeRef = useRef(0);
 
   const addError = useCallback((message) => {
     const id = Date.now() + Math.random();
@@ -781,6 +836,9 @@ export default function PocketPodEditor() {
       { time, dir, data: hex, id: Date.now() + Math.random() },
     ]);
   }, []);
+
+  // Track effect type for CC routing
+  useEffect(() => { effectTypeRef.current = params.effect; }, [params.effect]);
 
   // Initialize Web MIDI
   useEffect(() => {
@@ -937,12 +995,18 @@ export default function PocketPodEditor() {
       if ((data[0] & 0xf0) === 0xb0) {
         const cc = data[1];
         const val = data[2];
-        for (const [key, def] of Object.entries(MIDI_CC_MAP)) {
-          if (def.cc === cc) {
-            // For toggle params, interpret >= 64 as on (1), < 64 as off (0)
-            const adjustedVal = def.max === 1 ? (val >= 64 ? 1 : 0) : val;
-            setParams((prev) => ({ ...prev, [key]: adjustedVal }));
-            break;
+        // Check effect-specific CCs first (42, 49, 55, 56, 58, 59)
+        const effectStateKey = EFFECT_CC_REVERSE_MAP[cc];
+        if (effectStateKey) {
+          setParams((prev) => ({ ...prev, [effectStateKey]: val }));
+        } else {
+          for (const [key, def] of Object.entries(MIDI_CC_MAP)) {
+            if (def.cc === cc) {
+              // For toggle params, interpret >= 64 as on (1), < 64 as off (0)
+              const adjustedVal = def.max === 1 ? (val >= 64 ? 1 : 0) : val;
+              setParams((prev) => ({ ...prev, [key]: adjustedVal }));
+              break;
+            }
           }
         }
       }
@@ -1028,10 +1092,16 @@ export default function PocketPodEditor() {
   const handleParamChange = (key, value) => {
     setParams((prev) => ({ ...prev, [key]: value }));
     setDirty(true);
-    if (connected && MIDI_CC_MAP[key]) {
-      // For toggle params, send 127 for on, 0 for off
-      const ccValue = MIDI_CC_MAP[key].max === 1 ? (value ? 127 : 0) : value;
-      sendCC(MIDI_CC_MAP[key].cc, ccValue);
+    if (connected) {
+      if (EFFECT_SPECIFIC_PARAMS.has(key)) {
+        // Use effect-type-specific CC routing
+        const cc = getEffectCC(key, effectTypeRef.current);
+        if (cc !== null) sendCC(cc, value);
+      } else if (MIDI_CC_MAP[key]) {
+        // For toggle params, send 127 for on, 0 for off
+        const ccValue = MIDI_CC_MAP[key].max === 1 ? (value ? 127 : 0) : value;
+        sendCC(MIDI_CC_MAP[key].cc, ccValue);
+      }
     }
   };
 
@@ -1466,14 +1536,6 @@ export default function PocketPodEditor() {
               onChange={(v) => handleParamChange("chanVol", v)}
               size="lg"
             />
-            <ChromeKnob
-              value={params.reverb_level}
-              min={0}
-              max={127}
-              label="Reverb"
-              onChange={(v) => handleParamChange("reverb_level", v)}
-              size="lg"
-            />
           </div>
         </BevelPanel>
 
@@ -1559,6 +1621,14 @@ export default function PocketPodEditor() {
             })}
             <div style={{ display: "flex", gap: "8px", justifyContent: "center", flexWrap: "wrap", alignItems: "flex-start" }}>
               <ChromeKnob
+                value={params.reverb_level}
+                min={0}
+                max={127}
+                label="Level"
+                onChange={(v) => handleParamChange("reverb_level", v)}
+                size="sm"
+              />
+              <ChromeKnob
                 value={params.reverb_decay}
                 min={0}
                 max={127}
@@ -1605,6 +1675,11 @@ export default function PocketPodEditor() {
         </div>
 
         {/* ============ DELAY / EFFECT ROW ============ */}
+        {(() => {
+          const effectCategory = EFFECT_CATEGORIES[params.effect] || 'bypass';
+          const currentEffectKnobs = EFFECT_KNOB_CONFIGS[effectCategory] || [];
+          const hasDelay = DELAY_EFFECTS.has(params.effect);
+          return (
         <div style={{ display: "flex", gap: "0" }}>
           {/* Delay */}
           <BevelPanel style={{ flex: "1 1 50%", padding: "12px" }}>
@@ -1612,7 +1687,7 @@ export default function PocketPodEditor() {
               active: params.delay_enable === 1,
               onToggle: () => handleParamChange("delay_enable", params.delay_enable === 1 ? 0 : 1),
             })}
-            <div style={{ display: "flex", gap: "6px", justifyContent: "center", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: "6px", justifyContent: "center", flexWrap: "wrap", opacity: hasDelay ? 1 : 0.3, pointerEvents: hasDelay ? "auto" : "none", transition: "opacity 200ms ease" }}>
               <ChromeKnob
                 value={params.delay_time}
                 min={0}
@@ -1646,58 +1721,43 @@ export default function PocketPodEditor() {
                 size="md"
               />
             </div>
+            {!hasDelay && (
+              <div style={{ fontSize: "11px", color: COLORS.textMuted, textAlign: "center", marginTop: "8px", fontFamily: "'Outfit', sans-serif" }}>
+                No delay in current effect
+              </div>
+            )}
           </BevelPanel>
 
           {/* Effect Params */}
           <BevelPanel style={{ flex: "1 1 50%", padding: "12px" }}>
-            {sectionLabel("Effect", {
+            {sectionLabel(`Effect \u00b7 ${EFFECT_TYPES[params.effect]}`, {
               active: params.mod_fx_enable === 1,
               onToggle: () => handleParamChange("mod_fx_enable", params.mod_fx_enable === 1 ? 0 : 1),
             })}
-            <div style={{ display: "flex", gap: "6px", justifyContent: "center", flexWrap: "wrap" }}>
-              <ChromeKnob
-                value={params.effect_tweak}
-                min={0}
-                max={127}
-                label="Tweak"
-                onChange={(v) => handleParamChange("effect_tweak", v)}
-                size="md"
-              />
-              <ChromeKnob
-                value={params.effect_speed}
-                min={0}
-                max={127}
-                label="Speed"
-                onChange={(v) => handleParamChange("effect_speed", v)}
-                size="md"
-              />
-              <ChromeKnob
-                value={params.effect_depth}
-                min={0}
-                max={127}
-                label="Depth"
-                onChange={(v) => handleParamChange("effect_depth", v)}
-                size="md"
-              />
-              <ChromeKnob
-                value={params.effect_feedback}
-                min={0}
-                max={127}
-                label="Feedback"
-                onChange={(v) => handleParamChange("effect_feedback", v)}
-                size="md"
-              />
-              <ChromeKnob
-                value={params.effect_predelay}
-                min={0}
-                max={127}
-                label="Pre-Delay"
-                onChange={(v) => handleParamChange("effect_predelay", v)}
-                size="md"
-              />
-            </div>
+            {currentEffectKnobs.length > 0 ? (
+              <div style={{ display: "flex", gap: "6px", justifyContent: "center", flexWrap: "wrap" }}>
+                {currentEffectKnobs.map(({ stateKey, label }) => (
+                  <ChromeKnob
+                    key={stateKey}
+                    value={params[stateKey]}
+                    min={0}
+                    max={127}
+                    label={label}
+                    onChange={(v) => handleParamChange(stateKey, v)}
+                    size="md"
+                    {...(effectCategory === 'compressor' && stateKey === 'effect_speed' ? { formatValue: formatCompRatio } : {})}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: "11px", color: COLORS.textMuted, textAlign: "center", padding: "16px 0", fontFamily: "'Outfit', sans-serif" }}>
+                No modulation effect active
+              </div>
+            )}
           </BevelPanel>
         </div>
+          );
+        })()}
 
         {/* ============ TONE NOTES ============ */}
         <BevelPanel style={{ padding: "16px" }}>

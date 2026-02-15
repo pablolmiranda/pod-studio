@@ -213,6 +213,17 @@ describe('ChromeKnob', () => {
     fireEvent.keyDown(slider, { key: 'ArrowDown' });
     expect(onChange).not.toHaveBeenCalled();
   });
+
+  it('renders formatted value when formatValue prop is provided', () => {
+    const formatter = (v) => v <= 21 ? 'Off' : `${v}:1`;
+    render(<ChromeKnob value={10} min={0} max={127} label="Ratio" onChange={() => {}} formatValue={formatter} />);
+    expect(screen.getByText('Off')).toBeInTheDocument();
+  });
+
+  it('renders raw number when formatValue is not provided', () => {
+    render(<ChromeKnob value={64} min={0} max={127} label="Vol" onChange={() => {}} />);
+    expect(screen.getByText('64')).toBeInTheDocument();
+  });
 });
 
 // --- LogEntry ---

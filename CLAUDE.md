@@ -18,6 +18,7 @@ A web-based editor for the **Line 6 Pocket POD** guitar effects processor. Commu
  - Create unit test for every change
  - Before commit any code, run all the unit tests to make sure there is no regressions
  - Fix any broken tests
+ - At the end of every change, summarize the learnings and save them inside CLAUDE.md
 
 ## Testing
 - Run tests: `npm test` (watch mode) or `npx vitest run` (single run)

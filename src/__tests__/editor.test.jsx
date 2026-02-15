@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import PocketPodEditor, {
   SYSEX_START, SYSEX_END, LINE6_MANUFACTURER_ID, POCKET_POD_DEVICE_ID,
   MIDI_CC_MAP, REQUEST_ALL_PRESETS,
+  EFFECT_TYPES,
 } from '../PocketPodEditor';
 
 // --- Mock Web MIDI API helpers ---
@@ -562,6 +563,97 @@ describe('PocketPodEditor', () => {
     expect(toggleLabels).toContain('Noise Gate off');
     expect(toggleLabels).toContain('Reverb off');
     expect(toggleLabels).toContain('Delay off');
-    expect(toggleLabels).toContain('Effect off');
+    // Effect label includes the current effect type name
+    expect(toggleLabels).toContain('Effect \u00b7 Chorus 2 off');
+  });
+
+  // --- Dynamic Effect Card ---
+  it('shows chorus knobs by default (effect type 0 = Chorus 2)', async () => {
+    setupMIDIMock();
+    await act(async () => {
+      render(<PocketPodEditor />);
+    });
+    // Chorus has Speed, Depth, Feedback, Pre-Delay (Delay section also has Feedback)
+    const sliders = screen.getAllByRole('slider');
+    const labels = sliders.map(s => s.getAttribute('aria-label'));
+    expect(labels).toContain('Speed');
+    expect(labels).toContain('Depth');
+    expect(labels).toContain('Pre-Delay');
+    // Feedback appears twice: once in Effect, once in Delay
+    expect(labels.filter(l => l === 'Feedback')).toHaveLength(2);
+  });
+
+  it('shows "No modulation effect active" for bypass effect', async () => {
+    setupMIDIMock();
+    await act(async () => {
+      render(<PocketPodEditor />);
+    });
+    // Change effect type to Bypass (index 10)
+    const effectSelect = screen.getAllByRole('combobox').find(sel => {
+      const options = Array.from(sel.options || []);
+      return options.some(o => o.text === 'Bypass');
+    });
+    await act(async () => {
+      fireEvent.change(effectSelect, { target: { value: '10' } });
+    });
+    expect(screen.getByText('No modulation effect active')).toBeInTheDocument();
+  });
+
+  it('shows delay grey-out message for non-delay effects', async () => {
+    setupMIDIMock();
+    await act(async () => {
+      render(<PocketPodEditor />);
+    });
+    // Default effect type 0 (Chorus 2) is not a delay effect
+    expect(screen.getByText('No delay in current effect')).toBeInTheDocument();
+  });
+
+  it('hides delay grey-out message for delay effects', async () => {
+    setupMIDIMock();
+    await act(async () => {
+      render(<PocketPodEditor />);
+    });
+    // Change to Delay/Chorus 1 (index 4) which has delay
+    const effectSelect = screen.getAllByRole('combobox').find(sel => {
+      const options = Array.from(sel.options || []);
+      return options.some(o => o.text === 'Delay/Chorus 1');
+    });
+    await act(async () => {
+      fireEvent.change(effectSelect, { target: { value: '4' } });
+    });
+    expect(screen.queryByText('No delay in current effect')).not.toBeInTheDocument();
+  });
+
+  it('shows Reverb Level knob in reverb section', async () => {
+    setupMIDIMock();
+    await act(async () => {
+      render(<PocketPodEditor />);
+    });
+    // Reverb section should have Level, Decay, Tone, Diffusion, Density
+    const sliders = screen.getAllByRole('slider');
+    const labels = sliders.map(s => s.getAttribute('aria-label'));
+    expect(labels).toContain('Level');
+    expect(labels).toContain('Decay');
+    expect(labels).toContain('Tone');
+    expect(labels).toContain('Diffusion');
+    expect(labels).toContain('Density');
+  });
+
+  it('effect label updates when effect type changes', async () => {
+    setupMIDIMock();
+    await act(async () => {
+      render(<PocketPodEditor />);
+    });
+    // Change effect type to Rotary (index 2)
+    const effectSelect = screen.getAllByRole('combobox').find(sel => {
+      const options = Array.from(sel.options || []);
+      return options.some(o => o.text === 'Rotary');
+    });
+    await act(async () => {
+      fireEvent.change(effectSelect, { target: { value: '2' } });
+    });
+    const toggles = screen.getAllByRole('switch');
+    const toggleLabels = toggles.map(t => t.getAttribute('aria-label'));
+    expect(toggleLabels).toContain('Effect \u00b7 Rotary off');
   });
 });
